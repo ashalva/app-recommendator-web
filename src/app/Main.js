@@ -10,7 +10,9 @@ function httpGetAsync(theUrl, callback) {
 
 function loadCategories() {
 	httpGetAsync("http://localhost:8081/categories", drawCategories)
-}
+};
+
+loadCategories();
 
 var lastRadioChecked;
 
