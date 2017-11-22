@@ -1,3 +1,7 @@
+var features;
+var categories;
+var filteredCategories = {};
+
 function httpGetAsync(theUrl, callback) {
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
@@ -33,18 +37,53 @@ function getUrlVars() {
     return vars;
 }
 
+function clearRadioButtons(container) {
+
+	var elementsToRemove = [];
+    console.log(container.children.length);
+   	for (var i = 0; i < container.children.length; i++) {
+      var e = container.children[i];
+      console.log("element i: " + i + " e: "+ + e);
+      if (e.id == 'radio-div') { 
+      	elementsToRemove.push(e);
+      }
+  	}
+
+  	for (e in elementsToRemove) {
+  		container.removeChild(elementsToRemove[e]);
+  	}
+
+}
+
 function buttonLoading() {
     $("#next-button").button('loading');
 }
 
 //* Categories methods *//
 function loadCategories() {
-	httpGetAsync("http://localhost:8081/categories", drawCategories);
+	httpGetAsync("http://localhost:8081/categories", extractCategories);
 };
 
-function drawCategories(responseText) {
+function categorySearchChange() {
+	var search = document.getElementById('srch-term');
+	console.log(search.value);
+
+	for (var k in categories) { 
+		if (k.replace(/_/g, ' ').toLowerCase().indexOf(search.value.toLowerCase()) >= 0) { 
+			console.log("label: " + k.replace(/_/g, ' ').toLowerCase())
+			console.log('filter: ' + search.value.toLowerCase());
+			filteredCategories[k.replace(/_/g, ' ')] = k;
+			console.log(filteredCategories);
+		}
+	}
+	drawCategories(filteredCategories);
+	filteredCategories = [];
+}
+
+function drawCategories(categories, filter) {
 	var container = document.getElementById("radio-container");
 	var nextButton = document.getElementById("next-button");
+	var searchContainer = document.getElementById("search-container");
 
 	$("#next-button").click(function() {
 	    var $btn = $(this);
@@ -53,15 +92,13 @@ function drawCategories(responseText) {
 	    categoryNextClick();
 	});
 
-    var jsonObject = JSON.parse(responseText);
-    container.removeChild(nextButton);
+	//clearing old radiobuttons
+	clearRadioButtons(container);
 
-   	var jsonObject = JSON.parse(responseText);
-	
-    for (var k in jsonObject) {
+    for (var k in categories) {
 		var input = document.createElement("input");
 	    input.type = "radio";
-	    input.id = jsonObject[k];
+	    input.id = categories[k];
 		addOnClick(input);
 
 	    var label = document.createElement('label');
@@ -70,13 +107,22 @@ function drawCategories(responseText) {
 	
 		var div = document.createElement('div');
 		div.setAttribute('class','radio');
+		div.setAttribute('id','radio-div');
 
 		div.appendChild(input);
 		div.appendChild(label);
-		container.appendChild(div); 
+		container.appendChild(div);
+	
     } 
 
     container.appendChild(nextButton);
+}
+
+function extractCategories(responseText) {
+    var jsonObject = JSON.parse(responseText);
+    this.categories = jsonObject;
+
+	drawCategories(this.categories);   
 }
 
 
@@ -140,7 +186,6 @@ function loadFeatures() {
 	httpGetAsync("http://localhost:8081/features?id=" + getUrlVars().id + "&mode=1", drawFeatures)	
 }
 
-var features;
 
 function drawFeatures(responseText) {
 	var container = document.getElementById("radio-container");
