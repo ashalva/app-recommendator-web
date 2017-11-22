@@ -1,6 +1,5 @@
 var features;
 var categories;
-var filteredCategories = {};
 
 function httpGetAsync(theUrl, callback) {
     var xmlHttp = new XMLHttpRequest();
@@ -38,12 +37,9 @@ function getUrlVars() {
 }
 
 function clearRadioButtons(container) {
-
 	var elementsToRemove = [];
-    console.log(container.children.length);
    	for (var i = 0; i < container.children.length; i++) {
       var e = container.children[i];
-      console.log("element i: " + i + " e: "+ + e);
       if (e.id == 'radio-div') { 
       	elementsToRemove.push(e);
       }
@@ -52,7 +48,6 @@ function clearRadioButtons(container) {
   	for (e in elementsToRemove) {
   		container.removeChild(elementsToRemove[e]);
   	}
-
 }
 
 function buttonLoading() {
@@ -65,19 +60,7 @@ function loadCategories() {
 };
 
 function categorySearchChange() {
-	var search = document.getElementById('srch-term');
-	console.log(search.value);
-
-	for (var k in categories) { 
-		if (k.replace(/_/g, ' ').toLowerCase().indexOf(search.value.toLowerCase()) >= 0) { 
-			console.log("label: " + k.replace(/_/g, ' ').toLowerCase())
-			console.log('filter: ' + search.value.toLowerCase());
-			filteredCategories[k.replace(/_/g, ' ')] = k;
-			console.log(filteredCategories);
-		}
-	}
-	drawCategories(filteredCategories);
-	filteredCategories = [];
+	drawCategories(categories, document.getElementById('srch-term').value);
 }
 
 function drawCategories(categories, filter) {
@@ -111,8 +94,9 @@ function drawCategories(categories, filter) {
 
 		div.appendChild(input);
 		div.appendChild(label);
-		container.appendChild(div);
-	
+		if (filter == undefined || k.replace(/_/g, ' ').toLowerCase().indexOf(filter.toLowerCase()) >= 0) {
+			container.appendChild(div);	
+		}
     } 
 
     container.appendChild(nextButton);
