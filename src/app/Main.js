@@ -1,5 +1,6 @@
-var features;
 var categories;
+var applications;
+var featureObject;
 
 function httpGetAsync(theUrl, callback) {
     var xmlHttp = new XMLHttpRequest();
@@ -36,11 +37,11 @@ function getUrlVars() {
     return vars;
 }
 
-function clearRadioButtons(container) {
+function clearElements(container, elementName) {
 	var elementsToRemove = [];
    	for (var i = 0; i < container.children.length; i++) {
       var e = container.children[i];
-      if (e.id == 'radio-div') { 
+      if (e.id == elementName) { 
       	elementsToRemove.push(e);
       }
   	}
@@ -76,7 +77,7 @@ function drawCategories(categories, filter) {
 	});
 
 	//clearing old radiobuttons
-	clearRadioButtons(container);
+	clearElements(container, 'radio-div');
 
     for (var k in categories) {
 		var input = document.createElement("input");
@@ -103,9 +104,7 @@ function drawCategories(categories, filter) {
 }
 
 function extractCategories(responseText) {
-    var jsonObject = JSON.parse(responseText);
-    this.categories = jsonObject;
-
+    this.categories = JSON.parse(responseText);
 	drawCategories(this.categories);   
 }
 
@@ -123,36 +122,50 @@ function categoryNextClick() {
 //* Applications methods *//
 function loadApplications() {
 	buttonLoading();
-	console.log(getUrlVars().categoryId);
-	httpGetAsync("http://localhost:8081/apps?category=" + getUrlVars().categoryId, function(r) { drawApplications(r); });
+	httpGetAsync("http://localhost:8081/apps?category=" + getUrlVars().categoryId, function(r) { extractApplications(r); });
 }
 
-function drawApplications(responseText) {
+function applicationsSearchChange() {
+	drawApplications(applications, document.getElementById('srch-term').value);
+}
+
+function extractApplications(responseText) {
+	this.applications = JSON.parse(responseText);
+	drawApplications(this.applications);
+}
+
+function drawApplications(applications, filter) {
 	var container = document.getElementById("radio-container");
 	var nextButton = document.getElementById("next-button");
+	var searchContainer = document.getElementById("search-container");
 
 	$("#next-button").click(function() { applicationsNextClick(); });
 	$("#next-button").button('reset');
 
-	var jsonObject = JSON.parse(responseText);
-	
-    for (var k in jsonObject) {
+	clearElements(container, 'radio-div');
+
+    for (var k in applications) {
 		var input = document.createElement("input");
 	    input.type = "radio";
-	    input.id = jsonObject[k].id;
+	    input.id = applications[k].id;
 		addOnClick(input);
 
 	    var label = document.createElement('label');
 	    label.setAttribute("for", input);
-	    label.innerHTML = jsonObject[k].title;
+	    label.innerHTML = applications[k].title;
 	
 		var div = document.createElement('div');
 		div.setAttribute('class','radio');
+		div.setAttribute('id','radio-div');
 
 		div.appendChild(input);
 		div.appendChild(label);
-		container.appendChild(div); 
+		if (filter == undefined || applications[k].title.toLowerCase().indexOf(filter.toLowerCase()) >= 0) {
+			container.appendChild(div);	
+		}
     } 
+
+    container.appendChild(nextButton);
 }
 
 function applicationsNextClick() {
@@ -165,20 +178,32 @@ function applicationsNextClick() {
 	}
 }
 
-function loadFeatures() {
-	buttonLoading();
-	httpGetAsync("http://localhost:8081/features?id=" + getUrlVars().id + "&mode=1", drawFeatures)	
+//* Features methods*//
+
+function featuresSearchChange() {
+	drawFeatures(this.featureObject.features, document.getElementById('srch-term').value);
 }
 
+function loadFeatures() {
+	buttonLoading();
+	httpGetAsync("http://localhost:8081/features?id=" + getUrlVars().id + "&mode=1", extractFeatures)	
+}
 
-function drawFeatures(responseText) {
+function extractFeatures(responseText) {
+	this.featureObject = JSON.parse(responseText);
+	drawFeatures(this.featureObject.features);
+}
+
+function drawFeatures(features, filter) {
+
+	console.log(features);
+	var searchContainer = document.getElementById("search-container");
 	var container = document.getElementById("radio-container");
-	container.innerHTML = "";
+	
+	clearElements(container, 'checkbox-div');
 
 	$("#next-button").button('reset');
 	
-	var jsonObject = JSON.parse(responseText);
-	features = jsonObject.features;
     for (var k in features) {
     	//
 		var input = document.createElement("input");
@@ -191,10 +216,13 @@ function drawFeatures(responseText) {
 	
 		var div = document.createElement('div');
 		div.setAttribute('class','radio');
+		div.setAttribute('id', 'checkbox-div');
 
 		div.appendChild(input);
 		div.appendChild(label);
-		container.appendChild(div); 
+		if (filter == undefined || features[k].cluster_name.toLowerCase().indexOf(filter.toLowerCase()) >= 0) {
+			container.appendChild(div); 
+		}
     }
 }
 
