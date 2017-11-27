@@ -2,6 +2,9 @@ var categories;
 var applications;
 var featureObject;
 
+var descriptionThreshold = 75;
+var featureThreshold = 75;
+
 function httpGetAsync(theUrl, callback) {
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
@@ -122,7 +125,7 @@ function categoryNextClick() {
 //* Applications methods *//
 function loadApplications() {
 	buttonLoading();
-	httpGetAsync("http://localhost:8081/apps?category=" + getUrlVars().categoryId, function(r) { extractApplications(r); });
+	httpGetAsync("http://localhost:8081/apps?category=" + getUrlVars().categoryId, extractApplications );
 }
 
 function applicationsSearchChange() {
@@ -179,27 +182,40 @@ function applicationsNextClick() {
 }
 
 //* Features methods*//
-
 function featuresSearchChange() {
 	drawFeatures(this.featureObject.features, document.getElementById('srch-term').value);
 }
 
 function loadFeatures() {
 	buttonLoading();
-	httpGetAsync("http://localhost:8081/features?id=" + getUrlVars().id + "&mode=1", extractFeatures)	
+	var descriptionSlider = document.getElementById('description_slider');
+	var featureSlider = document.getElementById('feature_slider');
+
+	descriptionSlider.value = self.descriptionThreshold;
+	featureSlider.value = self.featureThreshold;
+
+	descriptionSlider.disabled = true;
+	featureSlider.disabled = true;
+
+	document.getElementById("feature_threshold").innerHTML = self.featureThreshold + '%';
+	document.getElementById("description_threshold").innerHTML = self.descriptionThreshold + '%';
+
+	httpGetAsync("http://localhost:8081/features?id=" + getUrlVars().id + "&desc_threshold=" + self.descriptionThreshold + "&feature_threshold=" + self.featureThreshold , extractFeatures);
 }
 
 function extractFeatures(responseText) {
 	this.featureObject = JSON.parse(responseText);
-	drawFeatures(this.featureObject.features);
+	drawFeatures(this.featureObject.data.features);
 }
 
 function drawFeatures(features, filter) {
-
-	console.log(features);
 	var searchContainer = document.getElementById("search-container");
 	var container = document.getElementById("radio-container");
+	var sliderContainer = document.getElementById("slider-container");
 	
+	document.getElementById('description_slider').disabled = false;
+	document.getElementById('feature_slider').disabled = false;
+
 	clearElements(container, 'checkbox-div');
 
 	$("#next-button").button('reset');
@@ -224,6 +240,16 @@ function drawFeatures(features, filter) {
 			container.appendChild(div); 
 		}
     }
+}
+
+function featureThresholdChange(value) {
+	self.featureThreshold = value;
+	loadFeatures();
+}
+
+function descriptionThresholdChange(value) {
+	self.descriptionThreshold = value;
+	loadFeatures();
 }
 
 function featuresOnClick() {

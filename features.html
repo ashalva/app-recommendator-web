@@ -7,6 +7,9 @@
         <script type="text/javascript" src="src/app/js/lib/bootstrap.min.js"></script>
         <script type="text/javascript" src="dist/bundle.js" defer=true></script>
         <script type="text/javascript" src="src/app/Main.js"></script>
+
+        <link rel="stylesheet" type="text/css" href="src/assets/css/style.css"></link>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css"> </link>   
     </head>
     <body onload = 'loadFeatures()'>
         <div id="container" class="container"> 
@@ -20,7 +23,13 @@
                   </div>
                 </div>
             </div>
-            <button id='next-button' type="button" class="btn btn-success" width="140" >Next</button>
+            <div id='slider-container'>
+                <p >Change the threshold for description <span id='description_threshold'>85</span> </p>
+                <input onchange="descriptionThresholdChange(this.value)" type="range" min="1" max="100" value="85" class="slider" id="description_slider">
+                <p >Change the threshold for features: <span id='feature_threshold'>85</span></p>
+                <input onchange="featureThresholdChange(this.value)" type="range" min="1" max="100" value="85" class="slider" id="feature_slider"><br>
+            </div>
+            <button id='next-button' type="button" class="btn btn-success" width="140"> Next </button>
         </div>
         <div class="footer">
                 <div class="col-sm-4">

@@ -12,5 +12,6 @@
   "scripts": {
     "start": "webpack-dev-server --open --config webpack.config.js",
     "build": "webpack --config webpack.config.js"
-  }
+  },
+  "dependencies": {}
 }
