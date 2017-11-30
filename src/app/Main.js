@@ -1,6 +1,8 @@
 var categories;
 var applications;
 var featureObject;
+var checkedFeatures;
+var sentimentSentences;
 
 var descriptionThreshold = 75;
 var featureThreshold = 75;
@@ -13,6 +15,49 @@ function httpGetAsync(theUrl, callback) {
     }
     xmlHttp.open("GET", theUrl, true); 
     xmlHttp.send(null);
+}
+
+function httpPostAsync(theUrl, body, callback) {
+	var xhr = new XMLHttpRequest();
+	var url = theUrl;
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var json = JSON.parse(xhr.responseText);
+        	callback(json);
+    	}
+	};
+	var data = JSON.stringify(body);
+	xhr.send(data);
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function httpPostPromise(theUrl, body) {
+	return new Promise(function(resolve, reject) {
+	    var req = new XMLHttpRequest();
+	    req.open('POST', theUrl);
+	    req.setRequestHeader("Content-type", "application/json");
+
+	    req.onload = function() {
+	      if (req.status == 200) {
+	        resolve(JSON.parse(req.response));
+	      }
+	      else {
+	        reject(Error(req.statusText));
+	      }
+	    };
+
+	    req.onerror = function() {
+	      reject(Error("Network Error"));
+	    };
+
+	    var data = JSON.stringify(body);
+	    req.send(data);
+  });
 }
 
 function addOnClick(element) {
@@ -200,7 +245,7 @@ function loadFeatures() {
 	document.getElementById("feature_threshold").innerHTML = self.featureThreshold + '%';
 	document.getElementById("description_threshold").innerHTML = self.descriptionThreshold + '%';
 
-	httpGetAsync("http://localhost:8081/features?id=" + getUrlVars().id + "&desc_threshold=" + self.descriptionThreshold + "&feature_threshold=" + self.featureThreshold , extractFeatures);
+	httpGetAsync("http://localhost:8081/features?id=" + getUrlVars().id + "&desc_threshold=" + self.descriptionThreshold + "&feature_threshold=" + self.featureThreshold , extractFeatures);	
 }
 
 function extractFeatures(responseText) {
@@ -210,7 +255,7 @@ function extractFeatures(responseText) {
 
 function drawFeatures(features, filter) {
 	var searchContainer = document.getElementById("search-container");
-	var container = document.getElementById("radio-container");
+	var container = document.getElementById("checkbox-container");
 	var sliderContainer = document.getElementById("slider-container");
 	
 	document.getElementById('description_slider').disabled = false;
@@ -219,6 +264,12 @@ function drawFeatures(features, filter) {
 	clearElements(container, 'checkbox-div');
 
 	$("#next-button").button('reset');
+	$("#next-button").click(function() {
+	    var $btn = $(this);
+	    $btn.button('loading');
+
+	    featuresNextClick();
+	});
 	
     for (var k in features) {
     	//
@@ -228,7 +279,7 @@ function drawFeatures(features, filter) {
 
 	    var label = document.createElement('label');
 	    label.setAttribute("for", input);
-	    label.innerHTML = features[k].cluster_name;
+	    label.innerHTML = capitalizeFirstLetter(features[k].cluster_name);
 	
 		var div = document.createElement('div');
 		div.setAttribute('class','radio');
@@ -252,8 +303,106 @@ function descriptionThresholdChange(value) {
 	loadFeatures();
 }
 
-function featuresOnClick() {
+function featuresNextClick() {
+	self.checkedFeatures = [];
+	var container = document.getElementById("checkbox-container");
+	for (var i = 0; i < container.children.length; i++) {
+      var e = container.children[i];
+      if (e.id == "checkbox-div" && e.childNodes[0].checked == true) { 
+      	self.checkedFeatures.push(e.childNodes[0].id);
+      }	
+  	}
 
+  	loadSentiments();
 }
+
+function loadSentiments() {
+	self.sentimentSentences = [];
+	for (var i = 0; i < self.checkedFeatures.length; i++) {
+		for (var sent in featureObject.data.sentences) {
+			//sentence is key
+			//featureObject.sentences[sentence] is value
+			var sentence = featureObject.data.sentences[sent];
+			for (var k in sentence) {
+				var extractedFeatures = sentence[k].extracted_features;
+				for (var f in extractedFeatures) {
+					if (checkedFeatures[i] === extractedFeatures[f]) {
+						self.sentimentSentences.push( { 
+							'feature' : checkedFeatures[i],
+							'sentence' : sentence[k].sentence_text 
+						});
+						break;
+					}	
+				}
+			}
+		}
+	}
+
+	var url = "http://localhost:9000/?properties=%7B%22annotators%22%3A%20%22sentiment%22%2C%20%22date%22%3A%20%222017-11-25T13%3A14%3A02%22%7D&pipelineLanguage=en";
+	var data = { "data": "I love you" };
+
+	var promises = [];
+
+	for (var i = 0; i< sentimentSentences.length; i++) {
+		promises.push(httpPostPromise(url, sentimentSentences[i].sentence));
+	}
+
+	Promise.all(promises).then(values => { 
+		for (var i = 0; i< sentimentSentences.length; i++) { 
+			self.sentimentSentences[i].sentimentValue = values[i].sentences[0].sentimentValue;
+			self.sentimentSentences[i].sentiment = values[i].sentences[0].sentiment;
+		}
+
+		drawSentiments(sentimentSentences);
+	});
+}
+
+function drawSentiments(sentiments, filter) {
+	var searchContainer = document.getElementById("search-container");
+	var container = document.getElementById("checkbox-container");
+	var sliderContainer = document.getElementById("slider-container");
+	
+	var descriptionSlider = document.getElementById('description_slider');
+	var featureSlider = document.getElementById('feature_slider');
+
+	descriptionSlider.disabled = true;
+	featureSlider.disabled = true;
+
+	var searchInput = document.getElementById('srch-term');
+	searchInput.onkeyup = sentimentSearchChange;
+
+	clearElements(container, 'sentiment-div');
+	clearElements(container, 'checkbox-div');
+	
+	$("#next-button").button('reset');
+
+	for (var i = 0; i < sentiments.length; i++) { 
+		var div = document.createElement('div');
+		div.setAttribute('id', 'sentiment-div');
+
+	    var label = document.createElement('label');
+	    var sent = sentiments[i].sentiment;
+	    if (sent == "Positive") {
+	    	label.style.color = "Green";
+	    } else if (sent == "Negative") {
+	    	label.style.color = "Red";
+	    } else {
+	    	label.style.color = "Orange";
+	    }
+	    
+	    label.innerHTML = capitalizeFirstLetter(sentiments[i].feature) + " - " + sentiments[i].sentence + "</br>"; 
+
+		div.appendChild(label);
+		if (filter == undefined || label.innerHTML.toLowerCase().indexOf(filter.toLowerCase()) >= 0) {
+			container.appendChild(div);
+		}
+	}
+}
+
+function sentimentSearchChange() {
+	drawSentiments(self.sentimentSentences, document.getElementById('srch-term').value);
+}
+
+
 
 
