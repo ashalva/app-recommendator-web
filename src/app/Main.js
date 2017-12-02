@@ -313,12 +313,19 @@ function featuresNextClick() {
       }	
   	}
 
-  	loadSentiments();
+  	localStorage["checkedFeatures"] = JSON.stringify(self.checkedFeatures);
+  	localStorage["featureObject"] = JSON.stringify(self.featureObject);
+  	
+  	window.location = 'sentiments.html';
+
 }
 
 function loadSentiments() {
+	self.checkedFeatures = JSON.parse(localStorage["checkedFeatures"]);
+	self.featureObject = JSON.parse(localStorage["featureObject"]);
 	self.sentimentSentences = [];
-	for (var i = 0; i < self.checkedFeatures.length; i++) {
+
+	for (var i = 0; i < checkedFeatures.length; i++) {
 		for (var sent in featureObject.data.sentences) {
 			//sentence is key
 			//featureObject.sentences[sentence] is value
@@ -339,7 +346,6 @@ function loadSentiments() {
 	}
 
 	var url = "http://localhost:9000/?properties=%7B%22annotators%22%3A%20%22sentiment%22%2C%20%22date%22%3A%20%222017-11-25T13%3A14%3A02%22%7D&pipelineLanguage=en";
-	var data = { "data": "I love you" };
 
 	var promises = [];
 
@@ -352,27 +358,20 @@ function loadSentiments() {
 			self.sentimentSentences[i].sentimentValue = values[i].sentences[0].sentimentValue;
 			self.sentimentSentences[i].sentiment = values[i].sentences[0].sentiment;
 		}
-
+		
 		drawSentiments(sentimentSentences);
 	});
 }
 
 function drawSentiments(sentiments, filter) {
 	var searchContainer = document.getElementById("search-container");
-	var container = document.getElementById("checkbox-container");
+	var container = document.getElementById("inner-container");
 	var sliderContainer = document.getElementById("slider-container");
 	
-	var descriptionSlider = document.getElementById('description_slider');
-	var featureSlider = document.getElementById('feature_slider');
-
-	descriptionSlider.disabled = true;
-	featureSlider.disabled = true;
-
 	var searchInput = document.getElementById('srch-term');
 	searchInput.onkeyup = sentimentSearchChange;
 
 	clearElements(container, 'sentiment-div');
-	clearElements(container, 'checkbox-div');
 	
 	$("#next-button").button('reset');
 
