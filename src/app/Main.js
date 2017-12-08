@@ -37,16 +37,18 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function httpPostPromise(theUrl, body) {
+function httpPostPromise(theUrl, body, identifier) {
 	return new Promise(function(resolve, reject) {
 	    var req = new XMLHttpRequest();
-	    req.async = false;
+	    req.async = true;
 	    req.open('POST', theUrl);
 	    req.setRequestHeader("Content-type", "application/json");
 
 	    req.onload = function() {
 	      if (req.status == 200) {
-	        resolve(JSON.parse(req.response));
+	      	var jsonToReturn = JSON.parse(req.response);
+			jsonToReturn.identifier = identifier;
+	        resolve(jsonToReturn);
 	      }
 	      else {
 	        reject(Error(req.statusText));
@@ -58,7 +60,8 @@ function httpPostPromise(theUrl, body) {
 	    };
 
 	    var data = JSON.stringify(body);
-	    req.send(data);
+
+		req.send(data);
   });
 }
 
@@ -396,109 +399,86 @@ function searchFeatureCluserWithClusterName(name) {
 }
 /* Sentiment functions */
 function loadSentiments() {
+	buttonLoading();
+
 	self.checkedFeatures = JSON.parse(localStorage["checkedFeatures"]);
 	self.featureObject = JSON.parse(localStorage["featureObject"]);
 	self.sentimentSentences = [];
 
-	// for (var i = 0; i < checkedFeatures.length; i++) {
-	// 	var clusterObj = { 'cluster_name' : checkedFeatures[i].cluster_name,
-	// 						'features': []
-	// 					 };
-	// 	for (var j = 0; j < checkedFeatures[i].cluster_features.length; j++) {
-	// 		for (var sent in featureObject.data.sentences) {
-	// 			var sentence = featureObject.data.sentences[sent];
-	// 			for (var k in sentence) {
-	// 				var extractedFeatures = sentence[k].extracted_features;
-	// 				for (var f in extractedFeatures) {
-	// 					if (checkedFeatures[i].cluster_features[j].feature === extractedFeatures[f] && f != 0) {
-	// 						clusterObj.features.push( { 
-	// 							'feature' : checkedFeatures[i].cluster_features[j].feature,
-	// 							'sentence' : sentence[k].sentence_text 
-	// 						});
-
-	// 						self.sentimentSentences.push(clusterObj);
-	// 						break;
-	// 					}	
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-
 	for (var i = 0; i < checkedFeatures.length; i++) {
-		for (var sent in featureObject.data.sentences) {
-			//sentence is key
-			//featureObject.sentences[sentence] is value
-			var sentence = featureObject.data.sentences[sent];
-			for (var k in sentence) {
-				var extractedFeatures = sentence[k].extracted_features;
-				for (var f in extractedFeatures) {
-					if (checkedFeatures[i].cluster_name === extractedFeatures[f]) {
-						self.sentimentSentences.push( { 
-							'feature' : checkedFeatures[i].cluster_name,
-							'sentence' : sentence[k].sentence_text 
-						});
-						break;
-					}	
+		var clusterObj = { 'cluster_name' : checkedFeatures[i].cluster_name,
+							'features': []
+						 };
+		for (var j = 0; j < checkedFeatures[i].cluster_features.length; j++) {
+			for (var sent in featureObject.data.sentences) {
+				var sentence = featureObject.data.sentences[sent];
+				for (var k in sentence) {
+					var extractedFeatures = sentence[k].extracted_features;
+					for (var f in extractedFeatures) {
+						if (checkedFeatures[i].cluster_features[j].feature === extractedFeatures[f] && f != 0) {
+							clusterObj.features.push( { 
+								'feature' : checkedFeatures[i].cluster_features[j].feature,
+								'sentence' : sentence[k].sentence_text 
+							});
+
+							if(self.sentimentSentences.indexOf(clusterObj) == -1) {
+								self.sentimentSentences.push(clusterObj);	
+							} 
+							break;
+						}	
+					}
 				}
 			}
 		}
 	}
 
-	var url = "http://localhost:9000/?properties=%7B%22annotators%22%3A%20%22sentiment%22%2C%20%22date%22%3A%20%222017-11-25T13%3A14%3A02%22%7D&pipelineLanguage=en";
+	console.log(sentimentSentences);
 
+	var url = "http://localhost:9000/?properties=%7B%22annotators%22%3A%20%22sentiment%22%2C%20%22date%22%3A%20%222017-11-25T13%3A14%3A02%22%7D&pipelineLanguage=en";
 	var promises = [];
 
-	for (var i = 0; i< sentimentSentences.length; i++) {
-		promises.push(httpPostPromise(url, sentimentSentences[i].sentence));
+	for (var i = 0; i < sentimentSentences.length; i++) {
+		var innerPromises = [];
+		for (var j = 0; j < sentimentSentences[i].features.length; j++) {
+			innerPromises.push(httpPostPromise(url, sentimentSentences[i].features[j].sentence, i));
+		}
+
+		promises.push(innerPromises);
 	}
 
-	Promise.all(promises).then(values => { 
-		for (var i = 0; i< sentimentSentences.length; i++) { 
-			self.sentimentSentences[i].sentimentValue = values[i].sentences[0].sentimentValue;
-			self.sentimentSentences[i].sentiment = values[i].sentences[0].sentiment;
-		}
-		
-		drawSentiments(sentimentSentences);
-	});
-
-	// for (var i = 0; i < sentimentSentences.length; i++) {
-	// 	var innerPromises = [];
-	// 	for (var j = 0; j < sentimentSentences[i].features.length; j++) {
-	// 		innerPromises.push(httpPostPromise(url, sentimentSentences[i].features[j].sentence));
-	// 	}
-
-	// 	promises.push(innerPromises);
-	// }
-
-	// var promiseCount = 0;
-	// for (var i = 0; i < promises.length; i++) {
-	// 	Promise.all(promises[i]).then(values => { 
+	var promiseCount = 0;
+	for (var i = 0; i < promises.length; i++) {
+		Promise.all(promises[i]).then(values => { 
 			
-	// 		var sentimentSum = 0;
-	// 		for (var j = 0; j < values.length; j++) { 
-	// 			sentimentSum += values[j].sentences[0].sentimentValue;
-	// 		}
-			
-	// 		var averageSentiment = (sentimentSum / values.length);
-	// 		self.sentimentSentences[promiseCount].sentimentValue = averageSentiment;
-			
-	// 		if (averageSentiment > 2.2) {
-	// 			self.sentimentSentences[promiseCount].sentiment = "Positive";	
-	// 		} else if (averageSentiment <= 2.2 && averageSentiment >= 1.5) {
-	// 			self.sentimentSentences[promiseCount].sentiment = "Normal";	
-	// 		} else {
-	// 			self.sentimentSentences[promiseCount].sentiment = "Negative";	
-	// 		}
+			var index = 0;
+			var sentimentSum = 0;
+			for (var j = 0; j < values.length; j++) { 
+				index = values[j].identifier;
+				var sentValue = parseInt(values[j].sentences[0].sentimentValue);
+				self.sentimentSentences[index].features[j].sentimentValue = sentValue;
+				
+				sentimentSum += sentValue;
+			}
 
-	// 		promiseCount += 1;
+			var averageSentiment = (sentimentSum / values.length);
 
-	// 		if (promiseCount == promises.length) {
-	// 			drawSentiments(sentimentSentences);
-	// 		}
-	// 	});
-	// }
+			self.sentimentSentences[index].sentimentValue = averageSentiment;
+			
+			if (averageSentiment > 2.2) {
+				self.sentimentSentences[index].sentiment = "Positive";	
+			} else if (averageSentiment <= 2.2 && averageSentiment >= 1.5) {
+				self.sentimentSentences[index].sentiment = "Normal";	
+			} else {
+				self.sentimentSentences[index].sentiment = "Negative";	
+			}
+
+			promiseCount += 1;
+
+			if (promiseCount == promises.length) {
+				drawSentiments(sentimentSentences);
+			}
+		});
+	}
 }
 
 function drawSentiments(sentiments, filter) {
@@ -531,23 +511,64 @@ function drawSentiments(sentiments, filter) {
 	positivesDiv.appendChild(positivesTitle);
 	normalsDiv.appendChild(normalsTitle);
 
-	console.log(sentiments);
 	for (var i = 0; i < sentiments.length; i++) { 
 
-		if (filter != undefined && sentiments[i].toLowerCase().indexOf(filter.toLowerCase()) < 0) {
+		if (filter != undefined && sentiments[i].cluster_name.toLowerCase().indexOf(filter.toLowerCase()) < 0) {
 			continue;
 		}
 
 		var sent = sentiments[i].sentiment;
 
-		var labelText = capitalizeFirstLetter(sentiments[i].feature) + " - " + sent +" - " + sentiments[i].sentence + "</br>";
+	    var dropDownDiv = document.createElement('div');
+		dropDownDiv.style.display = "inline";
+		dropDownDiv.setAttribute('class','dropdown');
+
+		var dropDownButton = document.createElement('button');
+		dropDownButton.setAttribute('type', 'button');
+		dropDownButton.setAttribute('data-toggle', 'dropdown')
+		dropDownButton.innerHTML = capitalizeFirstLetter(sentiments[i].cluster_name) + '<span class="caret"></span>';
+		dropDownButton.style.margin = '5px';
+
+		var ul = document.createElement('ul');
+		ul.setAttribute('class','dropdown-menu');
+		
+		var topFeaturesCount = 15;
+		if (sentiments[i].features.length < topFeaturesCount) {
+			topFeaturesCount = sentiments[i].features.length;
+		}
+
+		for (var j = 0; j < topFeaturesCount; j++) {
+			var li = document.createElement('a');
+			li.setAttribute('class','dropdown-item')
+			
+			if (sentiments[i].features[j].sentimentValue == 3) {
+	    		li.style.color = 'Green';
+		    } else if (sentiments[i].features[j].sentimentValue == 2) {
+		    	li.style.color = 'Red';
+		    } else {
+		    	li.style.color = 'Orange';
+		    }
+
+			li.innerHTML = capitalizeFirstLetter(sentiments[i].features[j].sentence);
+			ul.appendChild(li);
+
+			ul.appendChild(document.createElement('hr'));
+		}
+
+		dropDownDiv.appendChild(dropDownButton);
+		dropDownDiv.appendChild(ul);
+	    
+		var labelText = capitalizeFirstLetter(sentiments[i].cluster_name) + " - " + sent + "</br>";
 
 	    if (sent == "Positive") {
-	    	positivesDiv.appendChild(createLabel(labelText, 'sentiment-div', "Green"));
+	    	dropDownButton.setAttribute('class', 'btn btn-success dropdown-toggle');
+	    	positivesDiv.appendChild(dropDownDiv); 
 	    } else if (sent == "Negative") {
-	    	negativesDiv.appendChild(createLabel(labelText, 'sentiment-div', "Red"));
+	    	dropDownButton.setAttribute('class', 'btn btn-danger dropdown-toggle');
+	    	negativesDiv.appendChild(dropDownDiv); 
 	    } else {
-	    	normalsDiv.appendChild(createLabel(labelText, 'sentiment-div', "Orange"));
+	    	dropDownButton.setAttribute('class', 'btn btn-warning dropdown-toggle');
+	    	normalsDiv.appendChild(dropDownDiv); 
 	    }
 	}
 

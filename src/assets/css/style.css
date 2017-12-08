@@ -67,3 +67,7 @@
     background: #4CAF50;
     cursor: pointer;
 }
+
+.dropdown-menu {
+    width: 600px !important;
+}
