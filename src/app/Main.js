@@ -108,38 +108,32 @@ function createBoldLabel(text, textColor, fontSize) {
     label.innerHTML = text;
     label.style.fontWeight = 'bold';
 
-    if (textColor !== undefined) {
-    	label.style.color = textColor;
-    }
-    
-    if (fontSize !== undefined) {
-    	label.style.fontSize = fontSize;
-    }
+    if (textColor !== undefined) { label.style.color = textColor; }
+    if (fontSize !== undefined) { label.style.fontSize = fontSize; }
     
     div.appendChild(label);
-
     return div;
 }
 
 function createLabel(text, divId, textColor) {
 	var div = document.createElement('div');
-	if (divId !== undefined) {
-		div.setAttribute('id', divId);	
-	} 
+	if (divId !== undefined) { div.setAttribute('id', divId); } 
 	
     var label = document.createElement('label');
     label.innerHTML = text;
-    if (textColor !== undefined) {
-    	label.style.color = textColor;
-    }
+
+    if (textColor !== undefined) { label.style.color = textColor; }
     
     div.appendChild(label);
-
     return div;
 }
 
 function buttonLoading() {
     $("#next-button").button('loading');
+}
+
+function buttonReset() {
+	$("#next-button").button('reset');
 }
 
 //* Categories methods *//
@@ -174,7 +168,7 @@ function drawCategories(categories, filter) {
 
 	    var label = document.createElement('label');
 	    label.setAttribute("for", input);
-	    label.innerHTML = k.replace(/_/g, ' ');
+	    label.innerHTML = capitalizeFirstLetter(k.replace(/_/g, ' ').toLowerCase());
 	
 		var div = document.createElement('div');
 		div.setAttribute('class','radio');
@@ -194,7 +188,6 @@ function extractCategories(responseText) {
     this.categories = JSON.parse(responseText);
 	drawCategories(this.categories);   
 }
-
 
 function categoryNextClick() {
 	var container = document.getElementById("radio-container");
@@ -227,11 +220,15 @@ function drawApplications(applications, filter) {
 	var searchContainer = document.getElementById("search-container");
 
 	$("#next-button").click(function() { applicationsNextClick(); });
-	$("#next-button").button('reset');
+	buttonReset();
 
 	clearElements(container, 'radio-div');
 
     for (var k in applications) {
+		if (filter !== undefined && applications[k].title.toLowerCase().indexOf(filter.toLowerCase()) < 0) {
+			continue;
+		}
+
 		var input = document.createElement("input");
 	    input.type = "radio";
 	    input.id = applications[k].id;
@@ -247,9 +244,7 @@ function drawApplications(applications, filter) {
 
 		div.appendChild(input);
 		div.appendChild(label);
-		if (filter == undefined || applications[k].title.toLowerCase().indexOf(filter.toLowerCase()) >= 0) {
-			container.appendChild(div);	
-		}
+		container.appendChild(div);	
     } 
 
     container.appendChild(nextButton);
@@ -267,7 +262,7 @@ function applicationsNextClick() {
 
 //* Features methods*//
 function featuresSearchChange() {
-	drawFeatures(this.featureObject.features, document.getElementById('srch-term').value);
+	drawFeatures(this.featureObject.data.features, document.getElementById('srch-term').value);
 }
 
 function loadFeatures() {
@@ -301,8 +296,8 @@ function drawFeatures(features, filter) {
 	document.getElementById('feature_slider').disabled = false;
 
 	clearElements(container, 'checkbox-div');
+	buttonReset();
 
-	$("#next-button").button('reset');
 	$("#next-button").click(function() {
 	    var $btn = $(this);
 	    $btn.button('loading');
@@ -311,7 +306,7 @@ function drawFeatures(features, filter) {
 	});
 	
     for (var k in features) {
-		if (filter != undefined && features[k].cluster_name.toLowerCase().indexOf(filter.toLowerCase()) >= 0) {
+    	if (filter !== undefined && features[k].cluster_name.toLowerCase().indexOf(filter.toLowerCase()) < 0) {
 			continue;
 		}
 
@@ -430,8 +425,6 @@ function loadSentiments() {
 		}
 	}
 
-	console.log(sentimentSentences);
-
 	var url = "http://localhost:9000/?properties=%7B%22annotators%22:%20%22sentiment%22%7D&pipelineLanguage=en&timeout=30000";
 	var promises = [];
 
@@ -487,8 +480,7 @@ function drawSentiments(sentiments, filter) {
 	var searchInput = document.getElementById('srch-term');
 	searchInput.onkeyup = sentimentSearchChange;
 	
-	$("#next-button").button('reset');
-
+	buttonReset();
 	clearElements(container, 'negativesDiv');
 	clearElements(container, 'positivesDiv');
 	clearElements(container, 'normalsDiv');
