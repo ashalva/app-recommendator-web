@@ -40,8 +40,7 @@ function capitalizeFirstLetter(string) {
 function httpPostPromise(theUrl, body, identifier) {
 	return new Promise(function(resolve, reject) {
 	    var req = new XMLHttpRequest();
-	    req.async = true;
-	    req.open('POST', theUrl);
+	    req.open('POST', theUrl, true);
 	    req.setRequestHeader("Content-type", "application/json");
 
 	    req.onload = function() {
@@ -60,23 +59,22 @@ function httpPostPromise(theUrl, body, identifier) {
 	    };
 
 	    var data = JSON.stringify(body);
-
 		req.send(data);
   });
 }
 
 function addOnClick(element) {
-		element.onclick =  function () {
-			var inputs = container.getElementsByTagName('input');
-    		for (var i = 0; i < inputs.length; i++) {
-    			inputs[i].checked = false;
-    		}
-    		var nextButton = document.getElementById("next-button");
-			nextButton.disabled = false;
-    		
-    		element.checked = true;
-		};
+	element.onclick =  function () {
+		var inputs = container.getElementsByTagName('input');
+		for (var i = 0; i < inputs.length; i++) {
+			inputs[i].checked = false;
+		}
+		var nextButton = document.getElementById("next-button");
+		nextButton.disabled = false;
+		
+		element.checked = true;
 	};
+}
 
 function getUrlVars() {
     var vars = [], hash;
@@ -434,7 +432,7 @@ function loadSentiments() {
 
 	console.log(sentimentSentences);
 
-	var url = "http://localhost:9000/?properties=%7B%22annotators%22%3A%20%22sentiment%22%2C%20%22date%22%3A%20%222017-11-25T13%3A14%3A02%22%7D&pipelineLanguage=en";
+	var url = "http://localhost:9000/?properties=%7B%22annotators%22:%20%22sentiment%22%7D&pipelineLanguage=en&timeout=30000";
 	var promises = [];
 
 	for (var i = 0; i < sentimentSentences.length; i++) {
@@ -464,9 +462,9 @@ function loadSentiments() {
 
 			self.sentimentSentences[index].sentimentValue = averageSentiment;
 			
-			if (averageSentiment > 2.2) {
+			if (averageSentiment > 2.0) {
 				self.sentimentSentences[index].sentiment = "Positive";	
-			} else if (averageSentiment <= 2.2 && averageSentiment >= 1.5) {
+			} else if (averageSentiment <= 2.0 && averageSentiment >= 1.5) {
 				self.sentimentSentences[index].sentiment = "Normal";	
 			} else {
 				self.sentimentSentences[index].sentiment = "Negative";	
@@ -543,7 +541,7 @@ function drawSentiments(sentiments, filter) {
 			
 			if (sentiments[i].features[j].sentimentValue == 3) {
 	    		li.style.color = 'Green';
-		    } else if (sentiments[i].features[j].sentimentValue == 2) {
+		    } else if (sentiments[i].features[j].sentimentValue == 1) {
 		    	li.style.color = 'Red';
 		    } else {
 		    	li.style.color = 'Orange';
