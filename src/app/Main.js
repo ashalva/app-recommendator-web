@@ -63,12 +63,15 @@ function httpPostPromise(theUrl, body, identifier) {
   });
 }
 
-function addOnClick(element) {
+function addOnClick(element, uncheck = true) {
 	element.onclick =  function () {
 		var inputs = container.getElementsByTagName('input');
-		for (var i = 0; i < inputs.length; i++) {
-			inputs[i].checked = false;
+		if (uncheck) {
+			for (var i = 0; i < inputs.length; i++) {
+				inputs[i].checked = false;
+			}	
 		}
+
 		var nextButton = document.getElementById("next-button");
 		nextButton.disabled = false;
 		
@@ -215,7 +218,7 @@ function extractApplications(responseText) {
 }
 
 function drawApplications(applications, filter) {
-	var container = document.getElementById("radio-container");
+	var container = document.getElementById("check-container");
 	var nextButton = document.getElementById("next-button");
 	var searchContainer = document.getElementById("search-container");
 
@@ -230,9 +233,8 @@ function drawApplications(applications, filter) {
 		}
 
 		var input = document.createElement("input");
-	    input.type = "radio";
+	    input.type = "checkbox";
 	    input.id = applications[k].id;
-		addOnClick(input);
 
 	    var label = document.createElement('label');
 	    label.setAttribute("for", input);
@@ -251,13 +253,16 @@ function drawApplications(applications, filter) {
 }
 
 function applicationsNextClick() {
-	var container = document.getElementById("radio-container");
+	var container = document.getElementById("check-container");
 	var inputs = container.getElementsByTagName('input');
+	var checkedApps = [];
 	for (var i = 0; i < inputs.length; i++) {
 		if (inputs[i].checked == true) {
-			window.location = 'features.html?id=' + inputs[i].id;
+			checkedApps.push(inputs[i].id);
 		}
 	}
+
+	window.location = 'features.html?ids=' + checkedApps;
 }
 
 //* Features methods*//
@@ -279,7 +284,8 @@ function loadFeatures() {
 	document.getElementById("feature_threshold").innerHTML = self.featureThreshold + '%';
 	document.getElementById("description_threshold").innerHTML = self.descriptionThreshold + '%';
 
-	httpGetAsync("http://localhost:8081/features?id=" + getUrlVars().id + "&desc_threshold=" + self.descriptionThreshold + "&feature_threshold=" + self.featureThreshold , extractFeatures);	
+	console.log(getUrlVars().ids);
+	httpGetAsync("http://localhost:8081/features?ids=" + getUrlVars().ids + "&desc_threshold=" + self.descriptionThreshold + "&feature_threshold=" + self.featureThreshold , extractFeatures);	
 }
 
 function extractFeatures(responseText) {
