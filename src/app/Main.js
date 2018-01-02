@@ -1,8 +1,7 @@
 var categories;
 var applications;
-var featureObject;
-var checkedFeatures;
-var sentimentSentences;
+var allFeatures;
+var firstSentimentSentences;
 
 var descriptionThreshold = 75;
 var featureThreshold = 75;
@@ -35,32 +34,6 @@ function httpPostAsync(theUrl, body, callback) {
 function capitalizeFirstLetter(string) {
 	if (string === undefined) { return; }
     return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-function httpPostPromise(theUrl, body, identifier) {
-	return new Promise(function(resolve, reject) {
-	    var req = new XMLHttpRequest();
-	    req.open('POST', theUrl, true);
-	    req.setRequestHeader("Content-type", "application/json");
-
-	    req.onload = function() {
-	      if (req.status == 200) {
-	      	var jsonToReturn = JSON.parse(req.response);
-			jsonToReturn.identifier = identifier;
-	        resolve(jsonToReturn);
-	      }
-	      else {
-	        reject(Error(req.statusText));
-	      }
-	    };
-
-	    req.onerror = function() {
-	      reject(Error("Network Error"));
-	    };
-
-	    var data = JSON.stringify(body);
-		req.send(data);
-  });
 }
 
 function addOnClick(element, uncheck = true) {
@@ -108,7 +81,7 @@ function clearElements(container, elementName) {
 function createBoldLabel(text, textColor, fontSize) {
 	var div = document.createElement('div');
     var label = document.createElement('label');
-    label.innerHTML = text;
+    label.innerHTML = capitalizeFirstLetter(text);
     label.style.fontWeight = 'bold';
 
     if (textColor !== undefined) { label.style.color = textColor; }
@@ -267,7 +240,7 @@ function applicationsNextClick() {
 
 //* Features methods*//
 function featuresSearchChange() {
-	drawFeatures(this.featureObject.data.features, document.getElementById('srch-term').value);
+	drawFeatures(this.featureObject.data, document.getElementById('srch-term').value);
 }
 
 function loadFeatures() {
@@ -284,13 +257,12 @@ function loadFeatures() {
 	document.getElementById("feature_threshold").innerHTML = self.featureThreshold + '%';
 	document.getElementById("description_threshold").innerHTML = self.descriptionThreshold + '%';
 
-	console.log(getUrlVars().ids);
 	httpGetAsync("http://localhost:8081/features?ids=" + getUrlVars().ids + "&desc_threshold=" + self.descriptionThreshold + "&feature_threshold=" + self.featureThreshold , extractFeatures);	
 }
 
 function extractFeatures(responseText) {
-	this.featureObject = JSON.parse(responseText);
-	drawFeatures(this.featureObject.data.features);
+	self.allFeatures = JSON.parse(responseText);
+	drawFeatures(self.allFeatures);
 }
 
 function drawFeatures(features, filter) {
@@ -338,7 +310,7 @@ function drawFeatures(features, filter) {
 
 		var ul = document.createElement('ul');
 		ul.setAttribute('class','dropdown-menu');
-		var clusterFeatures = features[k].cluster_features;
+		var clusterFeatures = features[k].features;
 		
 		var topFeaturesCount = 7;
 		if (clusterFeatures.length < topFeaturesCount) {
@@ -346,9 +318,8 @@ function drawFeatures(features, filter) {
 		}
 
 		for (var i = 0; i < topFeaturesCount; i++) {
-
 			var li = document.createElement('li');
-			li.innerHTML = capitalizeFirstLetter(clusterFeatures[i].feature)
+			li.innerHTML = capitalizeFirstLetter(clusterFeatures[i])
 
 			ul.appendChild(li);
 		}
@@ -374,25 +345,24 @@ function descriptionThresholdChange(value) {
 }
 
 function featuresNextClick() {
-	self.checkedFeatures = [];
+	checkedFeatures = [];
 	var container = document.getElementById("checkbox-container");
 	for (var i = 0; i < container.children.length; i++) {
       var e = container.children[i];
       if (e.id == "checkbox-div" && e.childNodes[0].checked == true) { 
-      	self.checkedFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id));
+      	checkedFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id));
       }	
   	}
 
-  	localStorage["checkedFeatures"] = JSON.stringify(self.checkedFeatures);
-  	localStorage["featureObject"] = JSON.stringify(self.featureObject);
-  	
-  	window.location = 'sentiments.html';
+  	console.log(checkedFeatures);
+  	localStorage["checkedFeatures"] = JSON.stringify(checkedFeatures);
+  	window.location = 'sentiments.html?features=' + checkedFeatures.join(',');
 }
 
 function searchFeatureCluserWithClusterName(name) {
-	for (var i = 0; i < self.featureObject.data.features.length; i++) {
-		if (self.featureObject.data.features[i].cluster_name === name) {
-			return self.featureObject.data.features[i];
+	for (var i = 0; i < self.allFeatures.length; i++) {
+		if (self.allFeatures[i].cluster_name === name) {
+			return self.allFeatures[i].cluster_name.replace(/ /g,'%20');
 		}
 	}
 }
@@ -401,81 +371,13 @@ function loadSentiments() {
 	buttonLoading();
 
 	self.checkedFeatures = JSON.parse(localStorage["checkedFeatures"]);
-	self.featureObject = JSON.parse(localStorage["featureObject"]);
-	self.sentimentSentences = [];
+	httpGetAsync("http://localhost:8081/sentiments?features=" + getUrlVars().features, extractSentiments);	
+}
 
-	for (var i = 0; i < checkedFeatures.length; i++) {
-		var clusterObj = { 'cluster_name' : checkedFeatures[i].cluster_name,
-							'features': []
-						 };
-		for (var j = 0; j < checkedFeatures[i].cluster_features.length; j++) {
-			for (var sent in featureObject.data.sentences) {
-				var sentence = featureObject.data.sentences[sent];
-				for (var k in sentence) {
-					var extractedFeatures = sentence[k].extracted_features;
-					for (var f in extractedFeatures) {
-						if (checkedFeatures[i].cluster_features[j].feature === extractedFeatures[f] && f != 0) {
-							clusterObj.features.push( { 
-								'feature' : checkedFeatures[i].cluster_features[j].feature,
-								'sentence' : sentence[k].sentence_text 
-							});
-
-							if(self.sentimentSentences.indexOf(clusterObj) == -1) {
-								self.sentimentSentences.push(clusterObj);	
-							} 
-							break;
-						}	
-					}
-				}
-			}
-		}
-	}
-
-	var url = "http://localhost:9000/?properties=%7B%22annotators%22:%20%22sentiment%22%7D&pipelineLanguage=en&timeout=30000";
-	var promises = [];
-
-	for (var i = 0; i < sentimentSentences.length; i++) {
-		var innerPromises = [];
-		for (var j = 0; j < sentimentSentences[i].features.length; j++) {
-			innerPromises.push(httpPostPromise(url, sentimentSentences[i].features[j].sentence, i));
-		}
-
-		promises.push(innerPromises);
-	}
-
-	var promiseCount = 0;
-	for (var i = 0; i < promises.length; i++) {
-		Promise.all(promises[i]).then(values => { 
-			
-			var index = 0;
-			var sentimentSum = 0;
-			for (var j = 0; j < values.length; j++) { 
-				index = values[j].identifier;
-				var sentValue = parseInt(values[j].sentences[0].sentimentValue);
-				self.sentimentSentences[index].features[j].sentimentValue = sentValue;
-				
-				sentimentSum += sentValue;
-			}
-
-			var averageSentiment = (sentimentSum / values.length);
-
-			self.sentimentSentences[index].sentimentValue = averageSentiment;
-			
-			if (averageSentiment > 2.0) {
-				self.sentimentSentences[index].sentiment = "Positive";	
-			} else if (averageSentiment <= 2.0 && averageSentiment >= 1.5) {
-				self.sentimentSentences[index].sentiment = "Normal";	
-			} else {
-				self.sentimentSentences[index].sentiment = "Negative";	
-			}
-
-			promiseCount += 1;
-
-			if (promiseCount == promises.length) {
-				drawSentiments(sentimentSentences);
-			}
-		});
-	}
+function extractSentiments(responseText) {
+	sentiments = JSON.parse(responseText);
+	console.log(sentiments);
+	drawSentiments(sentiments);
 }
 
 function drawSentiments(sentiments, filter) {
@@ -487,93 +389,74 @@ function drawSentiments(sentiments, filter) {
 	searchInput.onkeyup = sentimentSearchChange;
 	
 	buttonReset();
-	clearElements(container, 'negativesDiv');
-	clearElements(container, 'positivesDiv');
-	clearElements(container, 'normalsDiv');
 
-	var negativesDiv = document.createElement('div');
-	var positivesDiv = document.createElement('div');
-	var normalsDiv = document.createElement('div');
-
-	negativesDiv.setAttribute('id','negativesDiv');
-	positivesDiv.setAttribute('id','positivesDiv');
-	normalsDiv.setAttribute('id','normalsDiv');
-
-	var negativesTitle = createBoldLabel('Negatives', 'Black', 20);
-	var positivesTitle = createBoldLabel('Positives', 'Black', 20);
-	var normalsTitle = createBoldLabel('Normals', 'Black', 20);
-	
-	negativesDiv.appendChild(negativesTitle);
-	positivesDiv.appendChild(positivesTitle);
-	normalsDiv.appendChild(normalsTitle);
-
-	for (var i = 0; i < sentiments.length; i++) { 
-
-		if (filter != undefined && sentiments[i].cluster_name.toLowerCase().indexOf(filter.toLowerCase()) < 0) {
+	for (var k in sentiments) { 
+		if (filter != undefined && k.toLowerCase().indexOf(filter.toLowerCase()) < 0) {
 			continue;
 		}
-
-		var sent = sentiments[i].sentiment;
-
-	    var dropDownDiv = document.createElement('div');
-		dropDownDiv.style.display = "inline";
-		dropDownDiv.setAttribute('class','dropdown');
-
-		var dropDownButton = document.createElement('button');
-		dropDownButton.setAttribute('type', 'button');
-		dropDownButton.setAttribute('data-toggle', 'dropdown')
-		dropDownButton.innerHTML = capitalizeFirstLetter(sentiments[i].cluster_name) + '<span class="caret"></span>';
-		dropDownButton.style.margin = '5px';
-
-		var ul = document.createElement('ul');
-		ul.setAttribute('class','dropdown-menu');
 		
-		var topFeaturesCount = 15;
-		if (sentiments[i].features.length < topFeaturesCount) {
-			topFeaturesCount = sentiments[i].features.length;
-		}
+		var featureNameLabel = createBoldLabel(k, 'Black', 20);
+		
+		var firstAppdropDowndDiv = drawDropDownDiv(k, sentiments[k].firstAppSentiments, sentiments[k].firstAppSentimentAverage);
+		var secondAppdropDowndDiv = drawDropDownDiv(k, sentiments[k].secondAppSentiments, sentiments[k].secondAppSentimentAverage);
 
-		for (var j = 0; j < topFeaturesCount; j++) {
-			var li = document.createElement('a');
-			li.setAttribute('class','dropdown-item')
-			
-			if (sentiments[i].features[j].sentimentValue == 3) {
-	    		li.style.color = 'Green';
-		    } else if (sentiments[i].features[j].sentimentValue == 1) {
-		    	li.style.color = 'Red';
-		    } else {
-		    	li.style.color = 'Orange';
-		    }
+	    container.appendChild(featureNameLabel);
+	    container.appendChild(firstAppdropDowndDiv);
+	    container.appendChild(secondAppdropDowndDiv)
+	}
+}
 
-			li.innerHTML = capitalizeFirstLetter(sentiments[i].features[j].sentence);
-			ul.appendChild(li);
+function drawDropDownDiv(clusterName, sentiments, sentimentAverage) {
+	var dropDownDiv = document.createElement('div');
+	dropDownDiv.style.display = "inline";
+	dropDownDiv.setAttribute('class','dropdown');
 
-			ul.appendChild(document.createElement('hr'));
-		}
+	var dropDownButton = document.createElement('button');
+	dropDownButton.setAttribute('type', 'button');
+	dropDownButton.setAttribute('data-toggle', 'dropdown')
+	dropDownButton.innerHTML = capitalizeFirstLetter(clusterName) + '<span class="caret"></span>';
+	dropDownButton.style.margin = '5px';
 
-		dropDownDiv.appendChild(dropDownButton);
-		dropDownDiv.appendChild(ul);
-	    
-		var labelText = capitalizeFirstLetter(sentiments[i].cluster_name) + " - " + sent + "</br>";
+	var ul = document.createElement('ul');
+	ul.setAttribute('class','dropdown-menu');
 
-	    if (sent == "Positive") {
-	    	dropDownButton.setAttribute('class', 'btn btn-success dropdown-toggle');
-	    	positivesDiv.appendChild(dropDownDiv); 
-	    } else if (sent == "Negative") {
-	    	dropDownButton.setAttribute('class', 'btn btn-danger dropdown-toggle');
-	    	negativesDiv.appendChild(dropDownDiv); 
-	    } else {
-	    	dropDownButton.setAttribute('class', 'btn btn-warning dropdown-toggle');
-	    	normalsDiv.appendChild(dropDownDiv); 
-	    }
+	var topFeaturesCount = 15;
+
+	if (sentiments.length < topFeaturesCount) {
+		topFeaturesCount = sentiments.length;
 	}
 
-	//comparing to 1,since the divs already consist of titles(e.g Negatives)
-	if (negativesDiv.childNodes.length > 1) { container.appendChild(negativesDiv); }
-	if (positivesDiv.childNodes.length > 1) { container.appendChild(positivesDiv); } 
-	if (normalsDiv.childNodes.length > 1) { container.appendChild(normalsDiv); }
+	for (var j = 0; j < topFeaturesCount; j++) {
+		var li = document.createElement('a');
+		li.setAttribute('class','dropdown-item')
+		
+		if (sentiments[j].sentiment > 2) {
+    		li.style.color = 'Green';
+	    } else if (sentiments[j].sentiment < 1.5) {
+	    	li.style.color = 'Red';
+	    } else {
+	    	li.style.color = 'Orange';
+	    }
+
+		li.innerHTML = capitalizeFirstLetter(sentiments[j].sentence);
+		ul.appendChild(li);
+		ul.appendChild(document.createElement('hr'));
+	}
+
+	dropDownDiv.appendChild(dropDownButton);
+	dropDownDiv.appendChild(ul);
+	
+	if (sentimentAverage > 2.0) {
+    	dropDownButton.setAttribute('class', 'btn btn-success dropdown-toggle');
+    } else if (sentimentAverage < 1.5) {
+    	dropDownButton.setAttribute('class', 'btn btn-danger dropdown-toggle');
+    } else {
+    	dropDownButton.setAttribute('class', 'btn btn-warning dropdown-toggle');
+    }
+
+	return dropDownDiv;
 }
 
 function sentimentSearchChange() {
-	drawSentiments(self.sentimentSentences, document.getElementById('srch-term').value);
+	drawSentiments(self.firstSentimentSentences, document.getElementById('srch-term').value);
 }
