@@ -36,13 +36,27 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+var checkedApplicationsCheckboxes = [];
 function addOnClick(element, uncheck = true) {
 	element.onclick =  function () {
 		var inputs = container.getElementsByTagName('input');
+		// if uncheck works for categories
+		// else is executed for features, where we allow user to select only two applications to compare
 		if (uncheck) {
 			for (var i = 0; i < inputs.length; i++) {
 				inputs[i].checked = false;
 			}	
+		} else {
+			if (checkedApplicationsCheckboxes.length == 2) {
+				//removing first element
+				checkedApplicationsCheckboxes.splice(0,1);
+			}
+			checkedApplicationsCheckboxes.push(element.name);
+			for (var i = 0; i < inputs.length; i++) {
+				if (checkedApplicationsCheckboxes.indexOf(inputs[i].name) == -1) {
+					inputs[i].checked = false;
+				}
+			}
 		}
 
 		var nextButton = document.getElementById("next-button");
@@ -208,6 +222,11 @@ function drawApplications(applications, filter) {
 		var input = document.createElement("input");
 	    input.type = "checkbox";
 	    input.id = applications[k].id;
+	    input.name = applications[k].title;
+	    addOnClick(input, uncheck = false);
+	    if (checkedApplicationsCheckboxes.indexOf(input.name) != -1) {
+	    	input.checked = true;
+	    }
 
 	    var label = document.createElement('label');
 	    label.setAttribute("for", input);
@@ -395,21 +414,23 @@ function drawSentiments(sentiments, filter) {
 			continue;
 		}
 		
-		var featureNameLabel = createBoldLabel(k, 'Black', 20);
+		var featureNameLabel = createBoldLabel("FEATURE: " + k, '#212D40', 20);
 		
-		var firstAppdropDowndDiv = drawDropDownDiv(k, sentiments[k].firstAppSentiments, sentiments[k].firstAppSentimentAverage);
-		var secondAppdropDowndDiv = drawDropDownDiv(k, sentiments[k].secondAppSentiments, sentiments[k].secondAppSentimentAverage);
+		var firstAppdropDowndDiv = drawDropDownDiv(k, sentiments[k].firstAppSentiments, sentiments[k].firstAppSentimentAverage, "App 1: " + sentiments[k].firstAppName);
+		var secondAppdropDowndDiv = drawDropDownDiv(k, sentiments[k].secondAppSentiments, sentiments[k].secondAppSentimentAverage, "App 2: " + sentiments[k].secondAppName);
 
 	    container.appendChild(featureNameLabel);
 	    container.appendChild(firstAppdropDowndDiv);
 	    container.appendChild(secondAppdropDowndDiv)
 	}
+	document.getElementById("next-button").style.visibility = 'hidden';
 }
 
-function drawDropDownDiv(clusterName, sentiments, sentimentAverage) {
+function drawDropDownDiv(clusterName, sentiments, sentimentAverage, appName) {
 	var dropDownDiv = document.createElement('div');
-	dropDownDiv.style.display = "inline";
+	dropDownDiv.style.display = "inline-block";
 	dropDownDiv.setAttribute('class','dropdown');
+	dropDownDiv.style.width = '300px';
 
 	var dropDownButton = document.createElement('button');
 	dropDownButton.setAttribute('type', 'button');
@@ -443,6 +464,7 @@ function drawDropDownDiv(clusterName, sentiments, sentimentAverage) {
 		ul.appendChild(document.createElement('hr'));
 	}
 
+	dropDownDiv.appendChild(createBoldLabel(appName, '#355135', 17));
 	dropDownDiv.appendChild(dropDownButton);
 	dropDownDiv.appendChild(ul);
 	
@@ -453,6 +475,7 @@ function drawDropDownDiv(clusterName, sentiments, sentimentAverage) {
     } else {
     	dropDownButton.setAttribute('class', 'btn btn-warning dropdown-toggle');
     }
+
 
 	return dropDownDiv;
 }
