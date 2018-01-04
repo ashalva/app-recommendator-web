@@ -259,7 +259,7 @@ function applicationsNextClick() {
 
 //* Features methods*//
 function featuresSearchChange() {
-	drawFeatures(this.featureObject.data, document.getElementById('srch-term').value);
+	drawFeatures(this.allFeatures, document.getElementById('srch-term').value);
 }
 
 function loadFeatures() {
@@ -400,6 +400,7 @@ function extractSentiments(responseText) {
 }
 
 function drawSentiments(sentiments, filter) {
+	console.log(sentiments);
 	var searchContainer = document.getElementById("search-container");
 	var container = document.getElementById("inner-container");
 	var sliderContainer = document.getElementById("slider-container");
