@@ -400,7 +400,6 @@ function extractSentiments(responseText) {
 }
 
 function drawSentiments(sentiments, filter) {
-	console.log(sentiments);
 	var searchContainer = document.getElementById("search-container");
 	var container = document.getElementById("inner-container");
 	var sliderContainer = document.getElementById("slider-container");
@@ -423,8 +422,66 @@ function drawSentiments(sentiments, filter) {
 	    container.appendChild(featureNameLabel);
 	    container.appendChild(firstAppdropDowndDiv);
 	    container.appendChild(secondAppdropDowndDiv)
+
+	    container.appendChild(sentimentChart(k, sentiments[k]));	    
 	}
 	document.getElementById("next-button").style.visibility = 'hidden';
+
+}
+
+function barColor(value) {
+	var greenColor = 'rgba(75, 192, 192, 0.2)';
+	var orangeColor = 'rgba(255, 159, 64, 0.2)';
+	var redColor = 'rgba(255, 99, 132, 0.2)';
+
+	if (value > 2.0) {
+		return greenColor;
+	} else if (value >= 1.5) {
+		return orangeColor;
+	} else {
+		return redColor;
+	}
+}
+
+function sentimentChart(featureName, sentiment)  {
+	var chartDiv = document.createElement('div');
+	var canvas = document.createElement("canvas");
+	var ctx = canvas.getContext('2d');
+	console.log(sentiment);
+	var chart = new Chart(ctx, {
+	    type: 'bar',
+	    data: {
+	        labels: [sentiment.firstAppName, sentiment.secondAppName],
+	        datasets: [{
+	            label: 'Sentiment Average',
+	            data: [sentiment.firstAppSentimentAverage, sentiment.secondAppSentimentAverage],
+	            backgroundColor: [
+	                barColor(sentiment.firstAppSentimentAverage),
+	                barColor(sentiment.secondAppSentimentAverage)
+	            ],
+	            borderColor: [
+	                'rgba(54, 162, 235, 1)',
+	                'rgba(54, 162, 235, 1)'
+	            ],
+	            borderWidth: 1
+	        }]
+    	},
+    	options : {
+  			responsive: true,
+  			scales: {
+	            yAxes: [{
+	                ticks: {
+	                    beginAtZero:true
+	                }
+	            }]
+        	}
+  		}
+	});
+
+	chartDiv.appendChild(canvas);
+	chart.canvas.parentNode.style.width = '600px';
+
+	return chartDiv;
 }
 
 function drawDropDownDiv(clusterName, sentiments, sentimentAverage, appName) {
