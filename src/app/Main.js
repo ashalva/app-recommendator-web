@@ -406,7 +406,7 @@ function drawSentiments(sentiments) {
 	buttonReset();
 
 	for (var k in sentiments) { 
-		var featureNameLabel = createBoldLabel("FEATURE: " + capitalizeFirstLetter(k), '#212D40', 20);
+		var featureNameLabel = createBoldLabel("FEATURE: " + capitalizeFirstLetter(k), '#9A3334', 20);
 	    container.appendChild(featureNameLabel);
 
 	    container.appendChild(createBoldLabel("Sentence sentiment details", '#9a9c9e', 12));
@@ -432,22 +432,127 @@ function barColor(value) {
 
 function sentimentChart(container, featureName, sentiment)  {
 	container.appendChild(sentenceChartButton(sentiment.firstAppName, sentiment.firstAppSentiments, featureName));
-	container.appendChild(sentenceChartButton(sentiment.secondAppName, sentiment.secondAppSentiments, featureName));
+	if (sentiment.comparison) {
+		container.appendChild(sentenceChartButton(sentiment.secondAppName, sentiment.secondAppSentiments, featureName));
+		comparisonLinearChart(container, sentiment);
+	}
+
+	var labels = [sentiment.firstAppName]
+	var values = [sentiment.firstAppSentimentAverage];
+	if (sentiment.comparison) {
+		labels.push(sentiment.secondAppName);
+		values.push(sentiment.secondAppSentimentAverage);
+	}
 
 	var sentAverageChart = chart('bar', 
-								[sentiment.firstAppName, sentiment.secondAppName], 
+								labels,
 								'Sentiment Average', 
-								[sentiment.firstAppSentimentAverage, sentiment.secondAppSentimentAverage],
+								values,
 								[barColor(sentiment.firstAppSentimentAverage),
-						         barColor(sentiment.secondAppSentimentAverage) ]);
+						         barColor(sentiment.secondAppSentimentAverage)],
+						         true,
+						         '600px');
 	
 
 	container.appendChild(sentAverageChart);
 }
 
+function comparisonLinearChart(container, sentiment) {
+	var sentimentsComparisonButton = document.createElement('button');
+	sentimentsComparisonButton.innerHTML = "Compare sentences";
+	sentimentsComparisonButton.setAttribute('class','btn btn-primary');
+	sentimentsComparisonButton.style.marginTop = '0px'
+	sentimentsComparisonButton.style.marginRight = '20px'
+
+	sentimentsComparisonButton.onclick = (function() {
+	    return function() { 
+	    	var modal = document.getElementById('myModal');
+		    modal.style.display = "block";
+
+		    var body = document.getElementById('modal-body');
+		    body.innerHTML = '';
+
+		    var chartDiv = document.createElement('div');
+			var canvas = document.createElement("canvas");
+			var ctx = canvas.getContext('2d');
+			
+			var labels = [];
+			if (sentiment.secondAppSentiments.length > sentiment.firstAppSentiments.length) {
+				labels = sentiment.secondAppSentiments;
+			} else {
+				labels = sentiment.firstAppSentiments;
+			}
+			var chart = new Chart(ctx, {
+			    type: 'line',
+			    data: {
+			        labels: labels,
+			        datasets: [{
+			            label: sentiment.firstAppName,
+			            data: sentiment.firstAppSentiments.map(s => s.sentiment),
+			            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+			            borderColor: [
+			                'rgba(54, 162, 235, 1)',
+			                'rgba(54, 162, 235, 1)'
+			            ],
+			            borderWidth: 1
+			        },
+			        {
+			            label: sentiment.secondAppName,
+			            data: sentiment.secondAppSentiments.map(s => s.sentiment),
+			            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+			            borderColor: [
+			                'rgba(54, 162, 235, 1)',
+			                'rgba(54, 162, 235, 1)'
+			            ],
+			            borderWidth: 1
+			        }]
+		    	},
+		    	options : {
+		  			responsive: true,
+		  			responsiveAnimationDuration: 1000,
+		  			easing: 'easeInQuint',
+		  			scales: {
+			            yAxes: [{
+			                ticks: {
+			                    beginAtZero: true,
+			                    suggestedMax: 3.5
+			                }
+			            }],
+			             xAxes: [{
+			                display: false
+			            }]
+		        	},
+				    tooltips: {
+				        enabled: false
+				    }
+		  		}
+			});
+
+			chartDiv.appendChild(canvas);
+			chart.canvas.parentNode.style.width = '900px';
+
+			body.appendChild(chartDiv);
+
+		    var span = document.getElementsByClassName("close")[0];
+		    span.onclick = function() {
+			    modal.style.display = "none";
+			}
+
+			window.onclick = function(event) {
+			    if (event.target == modal) {
+			        modal.style.display = "none";
+			    }
+			}
+
+    	}
+	})();
+
+	container.appendChild(sentimentsComparisonButton);
+}
+
 function sentenceChartButton(appName, sentiments, featureName) {
 	var sentimentsDetailButton = document.createElement('button');
-	sentimentsDetailButton.innerHTML = appName;
+	sentimentsDetailButton.innerHTML = appName + " in details";
 	sentimentsDetailButton.setAttribute('class','btn btn-info');
 	sentimentsDetailButton.style.marginTop = '0px'
 	sentimentsDetailButton.style.marginRight = '20px'
@@ -483,7 +588,7 @@ function sentenceChartButton(appName, sentiments, featureName) {
 	return sentimentsDetailButton;
 }
 
-function chart(type, labels, chartName, data, backgroundColors, displayXLabels = true) {
+function chart(type, labels, chartName, data, backgroundColors, displayXLabels = true, width = '900px') {
 	var chartDiv = document.createElement('div');
 	var canvas = document.createElement("canvas");
 	var ctx = canvas.getContext('2d');
@@ -505,10 +610,13 @@ function chart(type, labels, chartName, data, backgroundColors, displayXLabels =
     	},
     	options : {
   			responsive: true,
+  			responsiveAnimationDuration: 1000,
+  			easing: 'easeInQuint',
   			scales: {
 	            yAxes: [{
 	                ticks: {
-	                    beginAtZero: true
+	                    beginAtZero: true,
+	                    suggestedMax: 3.5
 	                }
 	            }],
 	             xAxes: [{
@@ -519,61 +627,7 @@ function chart(type, labels, chartName, data, backgroundColors, displayXLabels =
 	});
 
 	chartDiv.appendChild(canvas);
-	chart.canvas.parentNode.style.width = '900px';
+	chart.canvas.parentNode.style.width = width;
 
 	return chartDiv;
-}
-
-function drawDropDownDiv(clusterName, sentiments, sentimentAverage, appName) {
-	var dropDownDiv = document.createElement('div');
-	dropDownDiv.style.display = "inline-block";
-	dropDownDiv.setAttribute('class','dropdown');
-	dropDownDiv.style.width = '300px';
-
-	var dropDownButton = document.createElement('button');
-	dropDownButton.setAttribute('type', 'button');
-	dropDownButton.setAttribute('data-toggle', 'dropdown')
-	dropDownButton.innerHTML = capitalizeFirstLetter(clusterName) + '<span class="caret"></span>';
-	dropDownButton.style.margin = '5px';
-
-	var ul = document.createElement('ul');
-	ul.setAttribute('class','dropdown-menu');
-
-	var topFeaturesCount = 15;
-
-	if (sentiments.length < topFeaturesCount) {
-		topFeaturesCount = sentiments.length;
-	}
-
-	for (var j = 0; j < topFeaturesCount; j++) {
-		var li = document.createElement('a');
-		li.setAttribute('class','dropdown-item')
-		
-		if (sentiments[j].sentiment > 2) {
-    		li.style.color = 'Green';
-	    } else if (sentiments[j].sentiment < 1.5) {
-	    	li.style.color = 'Red';
-	    } else {
-	    	li.style.color = 'Orange';
-	    }
-
-		li.innerHTML = capitalizeFirstLetter(sentiments[j].sentence);
-		ul.appendChild(li);
-		ul.appendChild(document.createElement('hr'));
-	}
-
-	dropDownDiv.appendChild(createBoldLabel(appName, '#355135', 17));
-	dropDownDiv.appendChild(dropDownButton);
-	dropDownDiv.appendChild(ul);
-	
-	if (sentimentAverage > 2.0) {
-    	dropDownButton.setAttribute('class', 'btn btn-success dropdown-toggle');
-    } else if (sentimentAverage < 1.5) {
-    	dropDownButton.setAttribute('class', 'btn btn-danger dropdown-toggle');
-    } else {
-    	dropDownButton.setAttribute('class', 'btn btn-warning dropdown-toggle');
-    }
-
-
-	return dropDownDiv;
 }
