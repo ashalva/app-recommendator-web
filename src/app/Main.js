@@ -254,7 +254,11 @@ function applicationsNextClick() {
 		}
 	}
 
-	window.location = 'features.html?ids=' + checkedApps;
+	if (checkedApps.length === 0) {
+		alert("Please choose at least one and maximum two applications");
+	} else { 
+		window.location = 'features.html?ids=' + checkedApps;
+	}
 }
 
 //* Features methods*//
@@ -281,7 +285,12 @@ function loadFeatures() {
 
 function extractFeatures(responseText) {
 	self.allFeatures = JSON.parse(responseText);
-	drawFeatures(self.allFeatures);
+	if (self.allFeatures.success === false) {
+		alert("Something went wrong, please try again");
+
+	} else {
+		drawFeatures(self.allFeatures);	
+	}
 }
 
 function drawFeatures(features, filter) {
