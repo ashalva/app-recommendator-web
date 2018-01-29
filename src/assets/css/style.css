@@ -140,3 +140,7 @@
     background-color: #5cb85c;
     color: white;
 }
+
+.sentiment-div {
+  display: none;
+}

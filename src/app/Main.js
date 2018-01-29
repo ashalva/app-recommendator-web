@@ -414,14 +414,41 @@ function drawSentiments(sentiments) {
 	var sliderContainer = document.getElementById("slider-container");
 	buttonReset();
 
-	for (var k in sentiments) { 
-		var featureNameLabel = createBoldLabel("FEATURE: " + capitalizeFirstLetter(k), '#9A3334', 20);
-	    container.appendChild(featureNameLabel);
+	var firstAppWholeSentimentAverage = 0;
+	var secondAppWholeSentimentAverage = 0;
+	var firstAppName = "";
+	var secondAppName = "";
 
+	for (var k in sentiments) { 
+	    container.appendChild(createBoldLabel("FEATURE: " + capitalizeFirstLetter(k), '#9A3334', 20));
 	    container.appendChild(createBoldLabel("Sentence sentiment details", '#9a9c9e', 12));
+
 	    sentimentChart(container, capitalizeFirstLetter(k), sentiments[k]);
+
+	    firstAppWholeSentimentAverage += sentiments[k].firstAppSentimentAverage;
+	    secondAppWholeSentimentAverage += sentiments[k].secondAppSentimentAverage;
+
+	    firstAppName = sentiments[k].firstAppName;
+	    secondAppName = sentiments[k].secondAppName;
 	}
 
+ 	firstAppWholeSentimentAverage /= Object.keys(sentiments).length;
+	secondAppWholeSentimentAverage /= Object.keys(sentiments).length
+
+	var wholeChart = chart('bar', 
+								[firstAppName, secondAppName],
+								'Sentiment Average', 
+								[firstAppWholeSentimentAverage, secondAppWholeSentimentAverage],
+								[barColor(firstAppWholeSentimentAverage),
+						         barColor(secondAppWholeSentimentAverage)],
+						         true,
+						         '600px');
+
+	var headline = createBoldLabel("Whole sentiment average: " + firstAppName + " VS " + secondAppName, '#612021', 25);
+	headline.style.marginTop = "20px";
+
+	container.insertBefore(headline, container.children[1]);
+	container.insertBefore(wholeChart, container.children[2]);
 	document.getElementById("next-button").style.visibility = 'hidden';
 }
 
@@ -440,10 +467,14 @@ function barColor(value) {
 }
 
 function sentimentChart(container, featureName, sentiment)  {
-	container.appendChild(sentenceChartButton(sentiment.firstAppName, sentiment.firstAppSentiments, featureName));
+	var sentimentDiv = document.createElement('div');
+	sentimentDiv.setAttribute('class','sentiment-div');
+	sentimentDiv.style.display = "none";
+
+	sentimentDiv.appendChild(sentenceChartButton(sentiment.firstAppName, sentiment.firstAppSentiments, featureName));
 	if (sentiment.comparison) {
-		container.appendChild(sentenceChartButton(sentiment.secondAppName, sentiment.secondAppSentiments, featureName));
-		comparisonLinearChart(container, sentiment);
+		sentimentDiv.appendChild(sentenceChartButton(sentiment.secondAppName, sentiment.secondAppSentiments, featureName));
+		sentimentDiv.appendChild(comparisonLinearChart(sentiment));
 	}
 
 	var labels = [sentiment.firstAppName]
@@ -463,13 +494,34 @@ function sentimentChart(container, featureName, sentiment)  {
 						         '600px');
 	
 
-	container.appendChild(sentAverageChart);
+	sentimentDiv.appendChild(sentAverageChart)
+
+
+	var toggleButton = document.createElement('button');
+	toggleButton.setAttribute('class','btn btn-primary');
+	toggleButton.innerHTML = featureName + " details";
+	toggleButton.style.marginBottom = '20px'
+	toggleButton.onclick = (function() {
+	    return function() { 
+	    	if (sentimentDiv.style.display === "none") {
+		        sentimentDiv.style.display = "block";
+		    } else {
+		        sentimentDiv.style.display = "none";
+		    }
+	    } 
+	})();
+
+	
+	container.appendChild(toggleButton);
+	container.appendChild(sentimentDiv);
+
+	container.appendChild(document.createElement('hr'));
 }
 
-function comparisonLinearChart(container, sentiment) {
+function comparisonLinearChart(sentiment) {
 	var sentimentsComparisonButton = document.createElement('button');
 	sentimentsComparisonButton.innerHTML = "Compare sentences";
-	sentimentsComparisonButton.setAttribute('class','btn btn-primary');
+	sentimentsComparisonButton.setAttribute('class','btn btn-info');
 	sentimentsComparisonButton.style.marginTop = '0px'
 	sentimentsComparisonButton.style.marginRight = '20px'
 
@@ -556,7 +608,7 @@ function comparisonLinearChart(container, sentiment) {
     	}
 	})();
 
-	container.appendChild(sentimentsComparisonButton);
+	return sentimentsComparisonButton;
 }
 
 function sentenceChartButton(appName, sentiments, featureName) {
