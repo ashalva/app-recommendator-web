@@ -418,6 +418,7 @@ function drawSentiments(sentiments) {
 	var secondAppWholeSentimentAverage = 0;
 	var firstAppName = "";
 	var secondAppName = "";
+	var comparison = false;
 
 	for (var k in sentiments) { 
 	    container.appendChild(createBoldLabel("FEATURE: " + capitalizeFirstLetter(k), '#9A3334', 20));
@@ -430,15 +431,23 @@ function drawSentiments(sentiments) {
 
 	    firstAppName = sentiments[k].firstAppName;
 	    secondAppName = sentiments[k].secondAppName;
+	    comparison = sentiments[k].comparison;
 	}
 
  	firstAppWholeSentimentAverage /= Object.keys(sentiments).length;
 	secondAppWholeSentimentAverage /= Object.keys(sentiments).length
 
+	var labels = [firstAppName]
+	var values = [firstAppWholeSentimentAverage];
+	if (comparison) {
+		labels.push(secondAppName);
+		values.push(secondAppWholeSentimentAverage);
+	}
+
 	var wholeChart = chart('bar', 
-								[firstAppName, secondAppName],
+								labels,
 								'Sentiment Average', 
-								[firstAppWholeSentimentAverage, secondAppWholeSentimentAverage],
+								values,
 								[barColor(firstAppWholeSentimentAverage),
 						         barColor(secondAppWholeSentimentAverage)],
 						         true,
