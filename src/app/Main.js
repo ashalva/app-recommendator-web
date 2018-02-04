@@ -651,7 +651,7 @@ function comparisonLinearChart(sentiment) {
 
 function sentenceChartButton(appName, sentiments, featureName) {
 	var sentimentsDetailButton = document.createElement('button');
-	sentimentsDetailButton.innerHTML = appName + " in details";
+	sentimentsDetailButton.innerHTML = appName + " with sentences";
 	sentimentsDetailButton.setAttribute('class','btn btn-info');
 	sentimentsDetailButton.style.marginTop = '0px'
 	sentimentsDetailButton.style.marginRight = '20px'
