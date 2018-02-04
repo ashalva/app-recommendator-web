@@ -404,7 +404,6 @@ function loadSentiments() {
 
 function extractSentiments(responseText) {
 	sentiments = JSON.parse(responseText);
-	console.log(sentiments);
 	drawSentiments(sentiments);
 }
 
@@ -418,21 +417,36 @@ function drawSentiments(sentiments) {
 	var secondAppWholeSentimentAverage = 0;
 	var firstAppName = "";
 	var secondAppName = "";
+	var firstAppFeatureSentimentAverages = [];
+	var secondAppFeatureSentimentAverages = [];
 	var comparison = false;
+	var headlineText = "";
 
 	for (var k in sentiments) { 
 	    container.appendChild(createBoldLabel("FEATURE: " + capitalizeFirstLetter(k), '#9A3334', 20));
-	    container.appendChild(createBoldLabel("Sentence sentiment details", '#9a9c9e', 12));
+	    container.appendChild(createBoldLabel("More details...", '#9a9c9e', 12));
 
 	    sentimentChart(container, capitalizeFirstLetter(k), sentiments[k]);
 
 	    firstAppWholeSentimentAverage += sentiments[k].firstAppSentimentAverage;
 	    secondAppWholeSentimentAverage += sentiments[k].secondAppSentimentAverage;
+	   	
+	   	firstAppFeatureSentimentAverages.push(sentiments[k].firstAppSentimentAverage);
+		secondAppFeatureSentimentAverages.push(sentiments[k].secondAppSentimentAverage);
 
 	    firstAppName = sentiments[k].firstAppName;
 	    secondAppName = sentiments[k].secondAppName;
 	    comparison = sentiments[k].comparison;
+
 	}
+
+	headlineText = "All features sentiment average: " + firstAppName;
+	var ds = [{
+				label: firstAppName,
+				backgroundColor: 'rgba(0,0,255, 0.5)',
+				data: firstAppFeatureSentimentAverages,
+				hoverBackgroundColor: "rgba(0,0,255, 0.3)"
+			}];
 
  	firstAppWholeSentimentAverage /= Object.keys(sentiments).length;
 	secondAppWholeSentimentAverage /= Object.keys(sentiments).length
@@ -442,6 +456,13 @@ function drawSentiments(sentiments) {
 	if (comparison) {
 		labels.push(secondAppName);
 		values.push(secondAppWholeSentimentAverage);
+		ds.push({
+			label: secondAppName,
+			backgroundColor: 'rgba(0,255,0, 0.5)',
+			data: secondAppFeatureSentimentAverages,
+			hoverBackgroundColor: "rgba(0,255,0, 0.3)"
+		});
+		headlineText += " VS " + secondAppName;
 	}
 
 	var wholeChart = chart('bar', 
@@ -452,12 +473,22 @@ function drawSentiments(sentiments) {
 						         barColor(secondAppWholeSentimentAverage)],
 						         true,
 						         '600px');
-
-	var headline = createBoldLabel("Whole sentiment average: " + firstAppName + " VS " + secondAppName, '#612021', 25);
+	wholeChart.style.marginBottom = "30px";
+	
+	var headline = createBoldLabel(headlineText, '#612021', 25);
 	headline.style.marginTop = "20px";
 
 	container.insertBefore(headline, container.children[1]);
 	container.insertBefore(wholeChart, container.children[2]);
+
+	var featureLevelHeadline = createBoldLabel("Sentiment averages per feature", '#612021', 25);
+	container.insertBefore(featureLevelHeadline, container.children[3]);
+	
+	var featuresGroupedChart = groupedChart({ labels: Object.keys(sentiments), datasets: ds });
+	featuresGroupedChart.style.marginBottom = "30px";
+	container.insertBefore(featuresGroupedChart, container.children[4])
+	container.insertBefore(document.createElement('hr'), container.children[5])
+
 	document.getElementById("next-button").style.visibility = 'hidden';
 }
 
@@ -502,13 +533,11 @@ function sentimentChart(container, featureName, sentiment)  {
 						         true,
 						         '600px');
 	
-
 	sentimentDiv.appendChild(sentAverageChart)
-
 
 	var toggleButton = document.createElement('button');
 	toggleButton.setAttribute('class','btn btn-primary');
-	toggleButton.innerHTML = featureName + " details";
+	toggleButton.innerHTML = featureName;
 	toggleButton.style.marginBottom = '20px'
 	toggleButton.onclick = (function() {
 	    return function() { 
@@ -678,6 +707,39 @@ function chart(type, labels, chartName, data, backgroundColors, displayXLabels =
 	            borderWidth: 1
 	        }]
     	},
+    	options : {
+  			responsive: true,
+  			responsiveAnimationDuration: 1000,
+  			easing: 'easeInQuint',
+  			scales: {
+	            yAxes: [{
+	                ticks: {
+	                    beginAtZero: true,
+	                    suggestedMax: 3.5
+	                }
+	            }],
+	             xAxes: [{
+	                display: displayXLabels
+	            }]
+        	}
+  		}
+	});
+
+	chartDiv.appendChild(canvas);
+	chart.canvas.parentNode.style.width = width;
+
+	return chartDiv;
+}
+
+function groupedChart(data, displayXLabels = true, width = '900px') {
+	var chartDiv = document.createElement('div');
+	var canvas = document.createElement("canvas");
+	var ctx = canvas.getContext('2d');
+	
+	console.log(data);
+	var chart = new Chart(ctx, {
+	    type: 'bar',
+	    data: data,
     	options : {
   			responsive: true,
   			responsiveAnimationDuration: 1000,
