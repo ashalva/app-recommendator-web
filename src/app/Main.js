@@ -408,6 +408,11 @@ function extractSentiments(responseText) {
 	drawSentiments(sentiments);
 }
 
+function round(num) {
+  num = Math.round(num+'e'+2)
+  return Number(num+'e-'+2)
+}
+
 function drawSentiments(sentiments) {
 	var searchContainer = document.getElementById("search-container");
 	var container = document.getElementById("inner-container");
@@ -434,7 +439,6 @@ function drawSentiments(sentiments) {
 	    firstAppWholeSentimentAverage += sentiments[k].firstAppSentimentAverage;
 	    secondAppWholeSentimentAverage += sentiments[k].secondAppSentimentAverage;
 	   	
-
 	   	firstAppFeatureSentimentAverages.push(sentiments[k].firstAppSentimentAverage);
 		secondAppFeatureSentimentAverages.push(sentiments[k].secondAppSentimentAverage);
 
@@ -455,7 +459,9 @@ function drawSentiments(sentiments) {
 			}];
 
  	firstAppWholeSentimentAverage /= Object.keys(sentiments).length;
+ 	firstAppWholeSentimentAverage = round(firstAppWholeSentimentAverage);
 	secondAppWholeSentimentAverage /= Object.keys(sentiments).length
+	secondAppWholeSentimentAverage = round(secondAppWholeSentimentAverage);
 
 	var labels = [firstAppName]
 	var values = [firstAppWholeSentimentAverage];
