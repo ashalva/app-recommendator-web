@@ -39,6 +39,13 @@ function capitalizeFirstLetter(string) {
 var checkedApplicationsCheckboxes = [];
 function addOnClick(element, uncheck = true) {
 	element.onclick =  function () {
+		//unchecking the checked checkbox
+		if (element.checked != true) {
+    		checkedApplicationsCheckboxes.splice(checkedApplicationsCheckboxes.indexOf(element.id), 1);
+			element.checked = false; 
+			return;
+		}
+
 		var inputs = container.getElementsByTagName('input');
 		// if uncheck works for categories
 		// else is executed for features, where we allow user to select only two applications to compare
@@ -51,14 +58,14 @@ function addOnClick(element, uncheck = true) {
 				//removing first element
 				checkedApplicationsCheckboxes.splice(0,1);
 			}
-			checkedApplicationsCheckboxes.push(element.name);
+			checkedApplicationsCheckboxes.push(element.id);
 			for (var i = 0; i < inputs.length; i++) {
-				if (checkedApplicationsCheckboxes.indexOf(inputs[i].name) == -1) {
+				if (checkedApplicationsCheckboxes.indexOf(inputs[i].id) == -1) {
 					inputs[i].checked = false;
 				}
 			}
 		}
-
+	
 		var nextButton = document.getElementById("next-button");
 		nextButton.disabled = false;
 		
@@ -247,17 +254,11 @@ function drawApplications(applications, filter) {
 function applicationsNextClick() {
 	var container = document.getElementById("check-container");
 	var inputs = container.getElementsByTagName('input');
-	var checkedApps = [];
-	for (var i = 0; i < inputs.length; i++) {
-		if (inputs[i].checked == true) {
-			checkedApps.push(inputs[i].id);
-		}
-	}
 
-	if (checkedApps.length === 0) {
+	if (checkedApplicationsCheckboxes.length === 0) {
 		alert("Please choose at least one and maximum two applications");
 	} else { 
-		window.location = 'features.html?ids=' + checkedApps;
+		window.location = 'features.html?ids=' + checkedApplicationsCheckboxes;
 	}
 }
 
@@ -418,6 +419,8 @@ function drawSentiments(sentiments) {
 	var firstAppName = "";
 	var secondAppName = "";
 	var firstAppFeatureSentimentAverages = [];
+	var firstAppColors = [];
+	var secondAppColors = [];
 	var secondAppFeatureSentimentAverages = [];
 	var comparison = false;
 	var headlineText = "";
@@ -431,8 +434,12 @@ function drawSentiments(sentiments) {
 	    firstAppWholeSentimentAverage += sentiments[k].firstAppSentimentAverage;
 	    secondAppWholeSentimentAverage += sentiments[k].secondAppSentimentAverage;
 	   	
+
 	   	firstAppFeatureSentimentAverages.push(sentiments[k].firstAppSentimentAverage);
 		secondAppFeatureSentimentAverages.push(sentiments[k].secondAppSentimentAverage);
+
+		firstAppColors.push(barColor(sentiments[k].firstAppSentimentAverage));
+		secondAppColors.push(barColor(sentiments[k].secondAppSentimentAverage));
 
 	    firstAppName = sentiments[k].firstAppName;
 	    secondAppName = sentiments[k].secondAppName;
@@ -443,9 +450,8 @@ function drawSentiments(sentiments) {
 	headlineText = "All features sentiment average: " + firstAppName;
 	var ds = [{
 				label: firstAppName,
-				backgroundColor: 'rgba(0,0,255, 0.5)',
+				backgroundColor: firstAppColors,
 				data: firstAppFeatureSentimentAverages,
-				hoverBackgroundColor: "rgba(0,0,255, 0.3)"
 			}];
 
  	firstAppWholeSentimentAverage /= Object.keys(sentiments).length;
@@ -458,10 +464,10 @@ function drawSentiments(sentiments) {
 		values.push(secondAppWholeSentimentAverage);
 		ds.push({
 			label: secondAppName,
-			backgroundColor: 'rgba(0,255,0, 0.5)',
-			data: secondAppFeatureSentimentAverages,
-			hoverBackgroundColor: "rgba(0,255,0, 0.3)"
+			backgroundColor: secondAppColors,
+			data: secondAppFeatureSentimentAverages
 		});
+
 		headlineText += " VS " + secondAppName;
 	}
 
@@ -493,9 +499,9 @@ function drawSentiments(sentiments) {
 }
 
 function barColor(value) {
-	var greenColor = 'rgba(75, 192, 192, 0.2)';
-	var orangeColor = 'rgba(255, 159, 64, 0.2)';
-	var redColor = 'rgba(255, 99, 132, 0.2)';
+	var greenColor = 'rgba(75, 192, 192, 0.5)';
+	var orangeColor = 'rgba(255, 159, 64, 0.5)';
+	var redColor = 'rgba(255, 99, 132, 0.5)';
 
 	if (value > 2.0) {
 		return greenColor;
@@ -700,11 +706,8 @@ function chart(type, labels, chartName, data, backgroundColors, displayXLabels =
 	            label: chartName,
 	            data: data,
 	            backgroundColor: backgroundColors,
-	            borderColor: [
-	                'rgba(54, 162, 235, 1)',
-	                'rgba(54, 162, 235, 1)'
-	            ],
-	            borderWidth: 1
+	            borderColor:  'rgba(54, 162, 235, 1)',
+	            borderWidth: 0.3
 	        }]
     	},
     	options : {
