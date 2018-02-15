@@ -99,6 +99,10 @@ function clearElements(container, elementName) {
   	}
 }
 
+function line() {
+	return document.createElement('hr');
+}
+
 function createBoldLabel(text, textColor, fontSize) {
 	var div = document.createElement('div');
     var label = document.createElement('label');
@@ -311,6 +315,40 @@ function drawFeatures(features, filter) {
 
 	    featuresNextClick();
 	});
+
+	container.appendChild(line());
+	var checkAllDiv = document.createElement('div');
+	checkAllDiv.setAttribute('class','radio');
+	checkAllDiv.setAttribute('id', 'checkbox-all-div');
+
+	var checkAll = document.createElement("input");
+    checkAll.type = "checkbox";
+    checkAll.id = 'check-all';
+    checkAll.onclick =  function () {
+		var container = document.getElementById("checkbox-container");
+		checkedFeatures = [];
+		for (var i = 0; i < container.children.length; i++) {
+	      var e = container.children[i];
+	      if (e.id == "checkbox-div") { 
+	      	//checking/unchecking the feature checkboxes
+	      	e.childNodes[0].checked = checkAll.checked;
+	      	//adding all features to the stored array
+	      	if (checkAll.checked) { checkedFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id)); } 
+	      }	
+	  	}
+	  	//remove all features from the stored array
+	  	if (!checkAll.checked) { checkedFeatures = []; }
+	};
+
+    var newlabel = document.createElement("Label");
+	newlabel.setAttribute("for", checkAll);
+	newlabel.innerHTML = "Check All";
+
+    checkAllDiv.appendChild(checkAll);
+    checkAllDiv.appendChild(newlabel);
+
+    container.appendChild(checkAllDiv);
+    container.appendChild(line());
 	
     for (var k in features) {
     	if (filter !== undefined && features[k].cluster_name.toLowerCase().indexOf(filter.toLowerCase()) < 0) {
@@ -499,7 +537,7 @@ function drawSentiments(sentiments) {
 	var featuresGroupedChart = groupedChart({ labels: Object.keys(sentiments), datasets: ds });
 	featuresGroupedChart.style.marginBottom = "30px";
 	container.insertBefore(featuresGroupedChart, container.children[4])
-	container.insertBefore(document.createElement('hr'), container.children[5])
+	container.insertBefore(line(), container.children[5])
 
 	document.getElementById("next-button").style.visibility = 'hidden';
 }
@@ -565,7 +603,7 @@ function sentimentChart(container, featureName, sentiment)  {
 	container.appendChild(toggleButton);
 	container.appendChild(sentimentDiv);
 
-	container.appendChild(document.createElement('hr'));
+	container.appendChild(line());
 }
 
 function comparisonLinearChart(sentiment) {
@@ -600,7 +638,7 @@ function comparisonLinearChart(sentiment) {
 			        datasets: [{
 			            label: sentiment.firstAppName,
 			            data: sentiment.firstAppSentiments.map(s => s.sentiment),
-			            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+			            backgroundColor: 'rgba(255, 255, 0, 0.2)',
 			            borderColor: [
 			                'rgba(54, 162, 235, 1)',
 			                'rgba(54, 162, 235, 1)'
