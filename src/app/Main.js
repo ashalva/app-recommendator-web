@@ -711,6 +711,9 @@ function sentenceChartButton(appName, sentiments, featureName) {
 	        var modal = document.getElementById('myModal');
 		    modal.style.display = "block";
 
+		    var titleLabel = document.getElementById('modal-title');
+		    titleLabel.innerHTML = "'" + featureName + "'" + ' sentiments for '+ appName;
+
 		    var body = document.getElementById('modal-body');
 		    body.innerHTML = '';
 		    var sentenceSentimentsChart = chart('bar',
@@ -741,6 +744,8 @@ function chart(type, labels, chartName, data, backgroundColors, displayXLabels =
 	var chartDiv = document.createElement('div');
 	var canvas = document.createElement("canvas");
 	var ctx = canvas.getContext('2d');
+	var theHelp = Chart.helpers;
+	var sentValues = {0: "1.0 - 1.5", 0.99: "1.5 - 2.0", 1.99: "2.0 - 3.0"};
 	
 	var chart = new Chart(ctx, {
 	    type: type,
@@ -755,6 +760,7 @@ function chart(type, labels, chartName, data, backgroundColors, displayXLabels =
 	        }]
     	},
     	options : {
+    		legend: sentimentLabelLegend(),
   			responsive: true,
   			responsiveAnimationDuration: 1000,
   			easing: 'easeInQuint',
@@ -783,7 +789,6 @@ function groupedChart(data, displayXLabels = true, width = '900px') {
 	var canvas = document.createElement("canvas");
 	var ctx = canvas.getContext('2d');
 	
-	console.log(data);
 	var chart = new Chart(ctx, {
 	    type: 'bar',
 	    data: data,
@@ -801,7 +806,8 @@ function groupedChart(data, displayXLabels = true, width = '900px') {
 	             xAxes: [{
 	                display: displayXLabels
 	            }]
-        	}
+        	},
+        	legend: sentimentLabelLegend()
   		}
 	});
 
@@ -809,4 +815,27 @@ function groupedChart(data, displayXLabels = true, width = '900px') {
 	chart.canvas.parentNode.style.width = width;
 
 	return chartDiv;
+}
+
+function sentimentLabelLegend() {
+	var theHelp = Chart.helpers;
+	var sentValues = {0: "1.0 - 1.5", 0.99: "1.5 - 2.0", 1.99: "2.0 - 3.0"};
+
+	return {
+			display: true,
+			labels: {
+				generateLabels: function(chart) {
+			        var labelArray = [];
+			        for (var objIndex in sentValues) {
+			        	labelArray.push({
+							text: sentValues[objIndex],
+							fillStyle: barColor(parseFloat(objIndex) + 1),
+							index: objIndex
+						});
+					}
+			        
+			        return labelArray;
+		      	}	
+		    }
+		};
 }
