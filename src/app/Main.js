@@ -299,6 +299,7 @@ function extractFeatures(responseText) {
 }
 
 function drawFeatures(features, filter) {
+	console.log(features);
 	var searchContainer = document.getElementById("search-container");
 	var container = document.getElementById("checkbox-container");
 	var sliderContainer = document.getElementById("slider-container");

@@ -144,3 +144,21 @@
 .sentiment-div {
   display: none;
 }
+
+#left-container {
+  float:left;
+  width: 33.3%;
+  background-color: red;
+ }
+
+ #right-container {
+   float: left;
+   width: 33.3%;
+   background-color: green;
+  }
+
+ #centre-container {
+    width: 30.3%;
+    float: left;
+    background-color: blue;
+  }
