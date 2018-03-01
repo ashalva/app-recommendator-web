@@ -1,10 +1,13 @@
 var categories;
 var applications;
+var seachedApplications;
 var allFeatures;
 var firstSentimentSentences;
 
 var descriptionThreshold = 75;
 var featureThreshold = 75;
+
+var API_URL = "http://localhost:8081/";
 
 function httpGetAsync(theUrl, callback) {
     var xmlHttp = new XMLHttpRequest();
@@ -36,12 +39,12 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-var checkedApplicationsCheckboxes = [];
-function addOnClick(element, uncheck = true) {
+var checkedApplicationsCheckboxes = {};
+function addOnClick(element, uncheck = true, addAboveCategories = function(){}) {
 	element.onclick =  function () {
 		//unchecking the checked checkbox
 		if (element.checked != true) {
-    		checkedApplicationsCheckboxes.splice(checkedApplicationsCheckboxes.indexOf(element.id), 1);
+    		delete checkedApplicationsCheckboxes[element.id];
 			element.checked = false; 
 			return;
 		}
@@ -54,17 +57,22 @@ function addOnClick(element, uncheck = true) {
 				inputs[i].checked = false;
 			}	
 		} else {
-			if (checkedApplicationsCheckboxes.length == 2) {
-				//removing first element
-				checkedApplicationsCheckboxes.splice(0,1);
+			if (Object.keys(checkedApplicationsCheckboxes).length == 2) {
+				//removing other element
+				var index = Object.keys(checkedApplicationsCheckboxes).indexOf(element.id);
+				delete checkedApplicationsCheckboxes[Object.keys(checkedApplicationsCheckboxes)[(index + 1) % 2]];
 			}
-			checkedApplicationsCheckboxes.push(element.id);
+
+			checkedApplicationsCheckboxes[element.id] = element.name;
+
 			for (var i = 0; i < inputs.length; i++) {
-				if (checkedApplicationsCheckboxes.indexOf(inputs[i].id) == -1) {
+				if (Object.keys(checkedApplicationsCheckboxes).indexOf(inputs[i].id) == -1) {
 					inputs[i].checked = false;
 				}
 			}
 		}
+		
+		addAboveCategories()
 	
 		var nextButton = document.getElementById("next-button");
 		nextButton.disabled = false;
@@ -137,13 +145,90 @@ function buttonReset() {
 	$("#next-button").button('reset');
 }
 
+var searchDelay = (function(){
+  var timer = 0;
+  return function(callback, ms){
+    clearTimeout (timer);
+    timer = setTimeout(callback, ms);
+  };
+})();
+
 //* Categories methods *//
 function loadCategories() {
-	httpGetAsync("http://localhost:8081/categories", extractCategories);
+	httpGetAsync(API_URL + "categories", extractCategories);
 };
 
 function categorySearchChange() {
-	drawCategories(categories, document.getElementById('srch-term').value);
+	searchDelay(function(){
+      var searchString = document.getElementById('srch-term').value;
+		if (searchString !== "") {
+			httpGetAsync(API_URL + "searchApp?searchString=" + document.getElementById('srch-term').value, applicationSearchByName);
+		}
+    }, 250 );
+}
+
+function applicationSearchByName(responseText) {
+	this.seachedApplications = JSON.parse(responseText);
+	drawApplicationsAboveTheCategories(this.seachedApplications);
+	console.log(checkedApplicationsCheckboxes);
+}
+
+function addChosenAppsAboveCategories() {
+	var chosenAppsDiv = document.getElementById("chosen-apps-div");
+	chosenAppsDiv.innerHTML = "";
+
+	if (Object.keys(checkedApplicationsCheckboxes).length > 0) {
+		var title = createBoldLabel("Chosen applications", '#9A3334', 15);
+		title.style.marginTop = "15px";
+		chosenAppsDiv.appendChild(title);
+
+		for (var k in checkedApplicationsCheckboxes) {
+		    var label = document.createElement('label');
+		    label.innerHTML = checkedApplicationsCheckboxes[k]
+		
+			var div = document.createElement('div');
+			div.setAttribute('class','radio');
+			div.setAttribute('id','radio-div');
+
+			div.appendChild(label);
+			chosenAppsDiv.appendChild(div);	
+	    } 
+	    chosenAppsDiv.appendChild(line());
+	}	
+}
+
+function drawApplicationsAboveTheCategories(applications) {
+	var searchedAppDiv = document.getElementById("searched-apps-div");
+	searchedAppDiv.innerHTML = "";
+	if (applications.length > 0) {
+		var title = createBoldLabel("Select desired application", '#9A3334', 15);
+		title.style.marginTop = "15px";
+		searchedAppDiv.appendChild(title);
+
+		for (var k in applications) {
+			var input = document.createElement("input");
+		    input.type = "checkbox";
+		    input.id = applications[k].id;
+		    input.name = applications[k].title;
+		    addOnClick(input, uncheck = false, addChosenAppsAboveCategories);
+		    if (Object.keys(checkedApplicationsCheckboxes).indexOf(input.name) != -1) {
+		    	input.checked = true;
+		    }
+
+		    var label = document.createElement('label');
+		    label.setAttribute("for", input);
+		    label.innerHTML = applications[k].title;
+		
+			var div = document.createElement('div');
+			div.setAttribute('class','radio');
+			div.setAttribute('id','radio-div');
+
+			div.appendChild(input);
+			div.appendChild(label);
+			searchedAppDiv.appendChild(div);	
+	    } 
+	    searchedAppDiv.appendChild(line());
+	}	
 }
 
 function drawCategories(categories, filter) {
@@ -162,6 +247,9 @@ function drawCategories(categories, filter) {
 	clearElements(container, 'radio-div');
 
     for (var k in categories) {
+    	if (k.toLowerCase().indexOf("mac") !== -1 || k.toLowerCase().indexOf("ipad") !== -1) { 
+    		continue;
+    	}
 		var input = document.createElement("input");
 	    input.type = "radio";
 	    input.id = categories[k];
@@ -203,7 +291,7 @@ function categoryNextClick() {
 //* Applications methods *//
 function loadApplications() {
 	buttonLoading();
-	httpGetAsync("http://localhost:8081/apps?category=" + getUrlVars().categoryId, extractApplications );
+	httpGetAsync(API_URL + "apps?category=" + getUrlVars().categoryId, extractApplications );
 }
 
 function applicationsSearchChange() {
@@ -285,7 +373,7 @@ function loadFeatures() {
 	document.getElementById("feature_threshold").innerHTML = self.featureThreshold + '%';
 	document.getElementById("description_threshold").innerHTML = self.descriptionThreshold + '%';
 
-	httpGetAsync("http://localhost:8081/features?ids=" + getUrlVars().ids + "&desc_threshold=" + self.descriptionThreshold + "&feature_threshold=" + self.featureThreshold , extractFeatures);	
+	httpGetAsync(API_URL + "features?ids=" + getUrlVars().ids + "&desc_threshold=" + self.descriptionThreshold + "&feature_threshold=" + self.featureThreshold , extractFeatures);	
 }
 
 function extractFeatures(responseText) {
@@ -439,7 +527,7 @@ function loadSentiments() {
 	buttonLoading();
 
 	self.checkedFeatures = JSON.parse(localStorage["checkedFeatures"]);
-	httpGetAsync("http://localhost:8081/sentiments?features=" + getUrlVars().features, extractSentiments);	
+	httpGetAsync(API_URL + "sentiments?features=" + getUrlVars().features, extractSentiments);	
 }
 
 function extractSentiments(responseText) {
