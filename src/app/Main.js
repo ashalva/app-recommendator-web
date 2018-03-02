@@ -46,8 +46,10 @@ function addOnClick(element, uncheck = true, addAboveCategories = function(){}) 
 		if (element.checked != true) {
     		delete checkedApplicationsCheckboxes[element.id];
 			element.checked = false; 
+			addAboveCategories();
 			return;
 		}
+
 
 		var inputs = container.getElementsByTagName('input');
 		// if uncheck works for categories
@@ -58,12 +60,26 @@ function addOnClick(element, uncheck = true, addAboveCategories = function(){}) 
 			}	
 		} else {
 			if (Object.keys(checkedApplicationsCheckboxes).length == 2) {
-				//removing other element
-				var index = Object.keys(checkedApplicationsCheckboxes).indexOf(element.id);
+				//removing last element
+				var index = 0;
+				for (var fi in checkedApplicationsCheckboxes) { 
+					if (checkedApplicationsCheckboxes[fi].last === true) {
+						index = Object.keys(checkedApplicationsCheckboxes).indexOf(fi);
+						break;
+					}
+				}
 				delete checkedApplicationsCheckboxes[Object.keys(checkedApplicationsCheckboxes)[(index + 1) % 2]];
 			}
 
-			checkedApplicationsCheckboxes[element.id] = element.name;
+			//resetting all items last to false
+			for (var fi in checkedApplicationsCheckboxes) {
+				checkedApplicationsCheckboxes[fi].last = false;
+			}
+
+			checkedApplicationsCheckboxes[element.id] = {};
+			checkedApplicationsCheckboxes[element.id].title = element.name;
+			checkedApplicationsCheckboxes[element.id].last = true;
+
 
 			for (var i = 0; i < inputs.length; i++) {
 				if (Object.keys(checkedApplicationsCheckboxes).indexOf(inputs[i].id) == -1) {
@@ -170,7 +186,6 @@ function categorySearchChange() {
 function applicationSearchByName(responseText) {
 	this.seachedApplications = JSON.parse(responseText);
 	drawApplicationsAboveTheCategories(this.seachedApplications);
-	console.log(checkedApplicationsCheckboxes);
 }
 
 function addChosenAppsAboveCategories() {
@@ -178,13 +193,13 @@ function addChosenAppsAboveCategories() {
 	chosenAppsDiv.innerHTML = "";
 
 	if (Object.keys(checkedApplicationsCheckboxes).length > 0) {
-		var title = createBoldLabel("Chosen applications", '#9A3334', 15);
+		var title = createBoldLabel("Chosen applications", '#208c22', 15);
 		title.style.marginTop = "15px";
 		chosenAppsDiv.appendChild(title);
 
 		for (var k in checkedApplicationsCheckboxes) {
 		    var label = document.createElement('label');
-		    label.innerHTML = checkedApplicationsCheckboxes[k]
+		    label.innerHTML = checkedApplicationsCheckboxes[k].title;
 		
 			var div = document.createElement('div');
 			div.setAttribute('class','radio');
@@ -211,7 +226,7 @@ function drawApplicationsAboveTheCategories(applications) {
 		    input.id = applications[k].id;
 		    input.name = applications[k].title;
 		    addOnClick(input, uncheck = false, addChosenAppsAboveCategories);
-		    if (Object.keys(checkedApplicationsCheckboxes).indexOf(input.name) != -1) {
+		    if (Object.keys(checkedApplicationsCheckboxes).indexOf(input.id) != -1) {
 		    	input.checked = true;
 		    }
 
@@ -243,6 +258,10 @@ function drawCategories(categories, filter) {
 	    categoryNextClick();
 	});
 
+	var chooseCategory = createBoldLabel("Chosee category", '#9A3334', 15);
+	chooseCategory.style.marginTop = "15px";
+	container.appendChild(chooseCategory);
+		
 	//clearing old radiobuttons
 	clearElements(container, 'radio-div');
 
