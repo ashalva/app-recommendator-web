@@ -58,6 +58,9 @@ function addOnClick(element, uncheck = true, addAboveCategories = function(){}) 
 			for (var i = 0; i < inputs.length; i++) {
 				inputs[i].checked = false;
 			}	
+			//remove Chosen Applications section
+			checkedApplicationsCheckboxes = {};
+			document.getElementById("chosen-apps-div").innerHTML = "";
 		} else {
 			if (Object.keys(checkedApplicationsCheckboxes).length == 2) {
 				//removing last element
@@ -298,8 +301,14 @@ function extractCategories(responseText) {
 }
 
 function categoryNextClick() {
+	if (Object.keys(checkedApplicationsCheckboxes).length > 0) {
+		window.location = 'features.html?ids=' + Object.keys(checkedApplicationsCheckboxes);
+		return;
+	}
+
 	var container = document.getElementById("radio-container");
 	var inputs = container.getElementsByTagName('input');
+
 	for (var i = 0; i < inputs.length; i++) {
 		if (inputs[i].checked == true) {
 			location.href = 'applications.html?categoryId=' + inputs[i].id;
@@ -342,7 +351,7 @@ function drawApplications(applications, filter) {
 	    input.id = applications[k].id;
 	    input.name = applications[k].title;
 	    addOnClick(input, uncheck = false);
-	    if (checkedApplicationsCheckboxes.indexOf(input.name) != -1) {
+	    if (Object.keys(checkedApplicationsCheckboxes).indexOf(input.id) != -1) {
 	    	input.checked = true;
 	    }
 
@@ -366,10 +375,10 @@ function applicationsNextClick() {
 	var container = document.getElementById("check-container");
 	var inputs = container.getElementsByTagName('input');
 
-	if (checkedApplicationsCheckboxes.length === 0) {
+	if (Object.keys(checkedApplicationsCheckboxes).length === 0) {
 		alert("Please choose at least one and maximum two applications");
 	} else { 
-		window.location = 'features.html?ids=' + checkedApplicationsCheckboxes;
+		window.location = 'features.html?ids=' + Object.keys(checkedApplicationsCheckboxes);
 	}
 }
 
