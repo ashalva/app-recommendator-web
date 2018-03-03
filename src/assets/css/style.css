@@ -148,17 +148,17 @@
 #left-container {
   float:left;
   width: 33.3%;
-  background-color: red;
+  background-color: 'rgba(75, 192, 192, 0.2)';
  }
 
  #right-container {
    float: left;
    width: 33.3%;
-   background-color: green;
+   background-color: 'rgba(75, 192, 192, 0.2)';
   }
 
  #centre-container {
     width: 30.3%;
     float: left;
-    background-color: blue;
+    background-color: 'rgba(75, 192, 192, 0.2)';
   }
