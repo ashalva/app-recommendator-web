@@ -601,7 +601,6 @@ function featuresNextClick() {
       	if  (self.allFeatures.commonFeatures !== undefined) {
       		features = self.allFeatures.commonFeatures
       	}
-
       	commonCheckedFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id, features));
       }	
   	}
@@ -613,7 +612,7 @@ function featuresNextClick() {
       	firstAppFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id, allFeatures.firstAppFeatures));
       }	
   	}  	
-  	
+
 	//collecting all second app uncommon features(if exists)
   	for (var i = 0; i < rightContainer.children.length; i++) {
       var e = rightContainer.children[i];
@@ -641,15 +640,17 @@ function searchFeatureCluserWithClusterName(name, features) {
 		}
 	}
 }
+
 /* Sentiment functions */
 function loadSentiments() {
 	buttonLoading();
 
-	httpGetAsync(API_URL + "sentiments?features=" + getUrlVars().features, extractSentiments);	
+	httpGetAsync(API_URL + "sentiments?features=" + getUrlVars().features + "&firstAppFeatures=" + getUrlVars().firstAppFeatures + "&secondAppFeatures=" + getUrlVars().secondAppFeatures, extractSentiments);
 }
 
 function extractSentiments(responseText) {
 	sentiments = JSON.parse(responseText);
+
 	drawSentiments(sentiments);
 }
 
