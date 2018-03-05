@@ -3,6 +3,9 @@ var applications;
 var seachedApplications;
 var allFeatures;
 var firstSentimentSentences;
+var commonCheckedFeatures;
+var firstAppFeatures;
+var secondAppFeatures;
 
 var descriptionThreshold = 75;
 var featureThreshold = 75;
@@ -458,7 +461,7 @@ function drawTwoAppsFeatures(features, filter) {
 	drawOneAppFeatures(features.secondAppFeatures, filter, rightContainer) 
 }
 
-function drawOneAppFeatures(features, filter, container = document.getElementById("checkbox-container")) {
+function drawOneAppFeatures(features, filter, container = document.getElementById("left-container")) {
 	var searchContainer = document.getElementById("search-container");
 	var sliderContainer = document.getElementById("slider-container");
 	
@@ -468,6 +471,7 @@ function drawOneAppFeatures(features, filter, container = document.getElementByI
 	clearElements(container, 'checkbox-div');
 	buttonReset();
 
+	$("#next-button").unbind( "click");
 	$("#next-button").click(function() {
 	    var $btn = $(this);
 	    $btn.button('loading');
@@ -487,18 +491,26 @@ function drawOneAppFeatures(features, filter, container = document.getElementByI
     checkAll.type = "checkbox";
     checkAll.id = 'check-all';
     checkAll.onclick =  function () {
-		checkedFeatures = [];
+    	var selectedFeatures = commonCheckedFeatures;
+    	if (container.id === "centre-container") {
+    		selectedFeatures = firstAppFeatures;
+    	} else if (container.id === "right-container") {
+    		selectedFeatures = secondAppFeatures;	
+    	}
+    	
+		selectedFeatures = [];
+
 		for (var i = 0; i < container.children.length; i++) {
 	      var e = container.children[i];
 	      if (e.id == "checkbox-div") { 
 	      	//checking/unchecking the feature checkboxes
 	      	e.childNodes[0].checked = checkAll.checked;
 	      	//adding all features to the stored array
-	      	if (checkAll.checked) { checkedFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id)); } 
+	      	if (checkAll.checked) { selectedFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id, features)); } 
 	      }	
 	  	}
 	  	//remove all features from the stored array
-	  	if (!checkAll.checked) { checkedFeatures = []; }
+	  	if (!checkAll.checked) { selectedFeatures = []; }
 	};
 
     var newlabel = document.createElement("Label");
@@ -573,24 +585,59 @@ function descriptionThresholdChange(value) {
 }
 
 function featuresNextClick() {
-	checkedFeatures = [];
-	var container = document.getElementById("checkbox-container");
-	for (var i = 0; i < container.children.length; i++) {
-      var e = container.children[i];
+	commonCheckedFeatures = [];
+	firstAppFeatures = [];
+	secondAppFeatures = [];
+
+	var leftContainer = document.getElementById("left-container");
+	var centreContainer = document.getElementById("centre-container");
+	var rightContainer = document.getElementById("right-container");
+
+	//collecting all common features selected
+	for (var i = 0; i < leftContainer.children.length; i++) {
+      var e = leftContainer.children[i];
       if (e.id == "checkbox-div" && e.childNodes[0].checked == true) { 
-      	checkedFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id));
+      	var features = self.allFeatures;
+      	if  (self.allFeatures.commonFeatures !== undefined) {
+      		features = self.allFeatures.commonFeatures
+      	}
+
+      	commonCheckedFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id, features));
       }	
   	}
 
-  	console.log(checkedFeatures);
-  	localStorage["checkedFeatures"] = JSON.stringify(checkedFeatures);
-  	window.location = 'sentiments.html?features=' + checkedFeatures.join(',');
+  	//collecting all first app uncommon features(if exists)
+	for (var i = 0; i < centreContainer.children.length; i++) {
+      var e = centreContainer.children[i];
+      if (e.id == "checkbox-div" && e.childNodes[0].checked == true) { 
+      	firstAppFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id, allFeatures.firstAppFeatures));
+      }	
+  	}  	
+  	
+	//collecting all second app uncommon features(if exists)
+  	for (var i = 0; i < rightContainer.children.length; i++) {
+      var e = rightContainer.children[i];
+      if (e.id == "checkbox-div" && e.childNodes[0].checked == true) { 
+      	secondAppFeatures.push(searchFeatureCluserWithClusterName(e.childNodes[0].id, allFeatures.secondAppFeatures));
+      }	
+  	}
+
+  	var location = 'sentiments.html?features=' + commonCheckedFeatures.join(',');
+  	if (firstAppFeatures.length > 0) {
+  		location += "&firstAppFeatures=" + firstAppFeatures.join(',');
+  	}
+
+  	if (secondAppFeatures.length > 0) {
+  		location += "&secondAppFeatures=" + secondAppFeatures.join(',');	
+  	}
+
+  	window.location = location;
 }
 
-function searchFeatureCluserWithClusterName(name) {
-	for (var i = 0; i < self.allFeatures.length; i++) {
-		if (self.allFeatures[i].clusterName === name) {
-			return self.allFeatures[i].clusterName.replace(/ /g,'%20');
+function searchFeatureCluserWithClusterName(name, features) {
+	for (var i = 0; i < features.length; i++) {
+		if (features[i].clusterName === name) {
+			return features[i].clusterName.replace(/ /g,'%20');
 		}
 	}
 }
@@ -598,7 +645,6 @@ function searchFeatureCluserWithClusterName(name) {
 function loadSentiments() {
 	buttonLoading();
 
-	self.checkedFeatures = JSON.parse(localStorage["checkedFeatures"]);
 	httpGetAsync(API_URL + "sentiments?features=" + getUrlVars().features, extractSentiments);	
 }
 
