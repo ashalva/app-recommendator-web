@@ -585,6 +585,8 @@ function descriptionThresholdChange(value) {
 }
 
 function featuresNextClick() {
+	buttonReset();
+	
 	commonCheckedFeatures = [];
 	firstAppFeatures = [];
 	secondAppFeatures = [];
@@ -645,13 +647,33 @@ function searchFeatureCluserWithClusterName(name, features) {
 function loadSentiments() {
 	buttonLoading();
 
-	httpGetAsync(API_URL + "sentiments?features=" + getUrlVars().features + "&firstAppFeatures=" + getUrlVars().firstAppFeatures + "&secondAppFeatures=" + getUrlVars().secondAppFeatures, extractSentiments);
+	var location = API_URL + "sentiments?";
+	if (getUrlVars().features !== undefined) {
+		location += ("features=" + getUrlVars().features);
+	}
+
+	console.log(getUrlVars().firstAppFeatures);
+	if (getUrlVars().firstAppFeatures !== undefined) {
+		location += ("&firstFeatures=" + getUrlVars().firstAppFeatures);
+	}
+
+	if (getUrlVars().secondAppFeatures !== undefined) {
+		location += ("&secondAppFeatures=" + getUrlVars().secondAppFeatures);
+	}
+
+	console.log(location);
+	httpGetAsync(location, extractSentiments);
 }
 
 function extractSentiments(responseText) {
 	sentiments = JSON.parse(responseText);
+	console.log(sentiments);
 
-	drawSentiments(sentiments);
+	if (sentiments.commonFeaturesSentiments === undefined) {
+		drawSentiments(sentiments);	
+	} else {
+		drawSentiments(sentiments.commonFeaturesSentiments);
+	}
 }
 
 function round(num) {
