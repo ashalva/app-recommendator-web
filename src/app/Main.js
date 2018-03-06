@@ -586,7 +586,7 @@ function descriptionThresholdChange(value) {
 
 function featuresNextClick() {
 	buttonReset();
-	
+
 	commonCheckedFeatures = [];
 	firstAppFeatures = [];
 	secondAppFeatures = [];
@@ -654,7 +654,7 @@ function loadSentiments() {
 
 	console.log(getUrlVars().firstAppFeatures);
 	if (getUrlVars().firstAppFeatures !== undefined) {
-		location += ("&firstFeatures=" + getUrlVars().firstAppFeatures);
+		location += ("&firstAppFeatures=" + getUrlVars().firstAppFeatures);
 	}
 
 	if (getUrlVars().secondAppFeatures !== undefined) {
@@ -669,10 +669,20 @@ function extractSentiments(responseText) {
 	sentiments = JSON.parse(responseText);
 	console.log(sentiments);
 
-	if (sentiments.commonFeaturesSentiments === undefined) {
-		drawSentiments(sentiments);	
+	if (sentiments.comparison) {
+		if (sentiments.commonFeaturesSentiments !== undefined) {
+			drawSentiments(sentiments.commonFeaturesSentiments);
+		} 
+
+		if (sentiments.firstAppUncommonSentiments !== undefined) {
+			drawSentiments(sentiments.firstAppUncommonSentiments, true);
+		}
+			
+		if (sentiments.secondAppUncommonSentiments !== undefined) {	
+			drawSentiments(sentiments.secondAppUncommonSentiments, true);
+		}
 	} else {
-		drawSentiments(sentiments.commonFeaturesSentiments);
+		drawSentiments(sentiments);
 	}
 }
 
@@ -681,7 +691,7 @@ function round(num) {
   return Number(num+'e-'+2)
 }
 
-function drawSentiments(sentiments) {
+function drawSentiments(sentiments, last = false) {
 	var searchContainer = document.getElementById("search-container");
 	var container = document.getElementById("inner-container");
 	var sliderContainer = document.getElementById("slider-container");
@@ -758,17 +768,26 @@ function drawSentiments(sentiments) {
 	var headline = createBoldLabel(headlineText, '#612021', 25);
 	headline.style.marginTop = "20px";
 
-	container.insertBefore(headline, container.children[1]);
-	container.insertBefore(wholeChart, container.children[2]);
-
 	var featureLevelHeadline = createBoldLabel("Sentiment averages per feature", '#612021', 25);
-	container.insertBefore(featureLevelHeadline, container.children[3]);
-	
 	var featuresGroupedChart = groupedChart({ labels: Object.keys(sentiments), datasets: ds });
 	featuresGroupedChart.style.marginBottom = "30px";
-	container.insertBefore(featuresGroupedChart, container.children[4])
-	container.insertBefore(line(), container.children[5])
 
+	if (last) { 
+		//each iteration adds 5 views
+		//calculating the correct index to add the view
+		container.insertBefore(headline, container.children[container.children.length - Object.keys(sentiments).length * 5]);
+		container.insertBefore(wholeChart, container.children[container.children.length - Object.keys(sentiments).length * 5]);
+		container.insertBefore(featureLevelHeadline, container.children[container.children.length - Object.keys(sentiments).length * 5]);
+		container.insertBefore(featuresGroupedChart, container.children[container.children.length - Object.keys(sentiments).length * 5]);
+		container.insertBefore(line(), container.children[container.children.length - Object.keys(sentiments).length * 5]);
+	} else {
+		container.insertBefore(headline, container.children[1]);
+		container.insertBefore(wholeChart, container.children[2]);	
+		container.insertBefore(featureLevelHeadline, container.children[3]);
+		container.insertBefore(featuresGroupedChart, container.children[4])
+		container.insertBefore(line(), container.children[5])
+	} 
+	
 	document.getElementById("next-button").style.visibility = 'hidden';
 }
 
