@@ -623,7 +623,18 @@ function featuresNextClick() {
       }	
   	}
 
-  	var location = 'sentiments.html?features=' + commonCheckedFeatures.join(',');
+  	if (commonCheckedFeatures.length === 0 && firstAppFeatures.length === 0 && secondAppFeatures.length === 0) {
+  		buttonReset();
+  		alert("Please choose at least one feature");
+  		return;
+  	}
+
+
+  	var location = 'sentiments.html?'; 
+  	if (commonCheckedFeatures.length > 0) {
+  		location += 'features=' + commonCheckedFeatures.join(',');	
+  	}
+  	
   	if (firstAppFeatures.length > 0) {
   		location += "&firstAppFeatures=" + firstAppFeatures.join(',');
   	}
