@@ -704,8 +704,14 @@ function round(num) {
 
 function drawSentiments(sentiments, last = false) {
 	var searchContainer = document.getElementById("search-container");
-	var container = document.getElementById("inner-container");
-	var sliderContainer = document.getElementById("slider-container");
+	var innerContainer = document.getElementById("inner-container");	
+	var contentContainer = document.createElement("div");
+	contentContainer.style.marginTop = '10px';
+
+	var container = document.createElement("div");
+	container.setAttribute("id","sentiment-container");
+	if (last) { container.style.display = "none"; }
+	
 	buttonReset();
 
 	var firstAppWholeSentimentAverage = 0;
@@ -783,23 +789,38 @@ function drawSentiments(sentiments, last = false) {
 	var featuresGroupedChart = groupedChart({ labels: Object.keys(sentiments), datasets: ds });
 	featuresGroupedChart.style.marginBottom = "30px";
 
-	if (last) { 
-		//each iteration adds 5 views
-		//calculating the correct index to add the view
-		container.insertBefore(headline, container.children[container.children.length - Object.keys(sentiments).length * 5]);
-		container.insertBefore(wholeChart, container.children[container.children.length - Object.keys(sentiments).length * 5]);
-		container.insertBefore(featureLevelHeadline, container.children[container.children.length - Object.keys(sentiments).length * 5]);
-		container.insertBefore(featuresGroupedChart, container.children[container.children.length - Object.keys(sentiments).length * 5]);
-		container.insertBefore(line(), container.children[container.children.length - Object.keys(sentiments).length * 5]);
-	} else {
-		container.insertBefore(headline, container.children[1]);
-		container.insertBefore(wholeChart, container.children[2]);	
-		container.insertBefore(featureLevelHeadline, container.children[3]);
-		container.insertBefore(featuresGroupedChart, container.children[4])
-		container.insertBefore(line(), container.children[5])
-	} 
+	container.insertBefore(headline, container.children[container.children.length - Object.keys(sentiments).length * 5]);
+	container.insertBefore(wholeChart, container.children[container.children.length - Object.keys(sentiments).length * 5]);
+	container.insertBefore(featureLevelHeadline, container.children[container.children.length - Object.keys(sentiments).length * 5]);
+	container.insertBefore(featuresGroupedChart, container.children[container.children.length - Object.keys(sentiments).length * 5]);
+	container.insertBefore(line(), container.children[container.children.length - Object.keys(sentiments).length * 5]);
 	
 	document.getElementById("next-button").style.visibility = 'hidden';
+	
+	if (last) {
+		var hideSentimentsButton = document.createElement("button");
+		hideSentimentsButton.setAttribute('class','btn btn-secondary btn-lg btn-block');
+		hideSentimentsButton.setAttribute('id','toggle-button');
+		hideSentimentsButton.innerHTML = "See uncommon features for " + firstAppName;
+		
+		
+		contentContainer.appendChild(hideSentimentsButton);
+
+		hideSentimentsButton.onclick = (function() {
+		    return function() { 
+		    	if (container.style.display === "none") {
+			        container.style.display = "block";
+			        hideSentimentsButton.innerHTML = "Hide uncommon features for " + firstAppName;
+			    } else {
+			        container.style.display = "none";
+			        hideSentimentsButton.innerHTML = "See uncommon features for " + firstAppName;
+			    }
+		    } 
+		})();
+	}
+
+	contentContainer.appendChild(container);
+	innerContainer.appendChild(contentContainer);
 }
 
 function barColor(value) {
