@@ -115,6 +115,20 @@ function getUrlVars() {
     return vars;
 }
 
+function clearLines(container) {
+	var elementsToRemove = [];
+   	for (var i = 0; i < container.children.length; i++) {
+      var e = container.children[i];
+      if (e.id == 'line') { 
+      	elementsToRemove.push(e);
+      }
+  	}
+
+  	for (e in elementsToRemove) {
+  		container.removeChild(elementsToRemove[e]);
+  	}
+}
+
 function clearElements(container, elementName) {
 	var elementsToRemove = [];
    	for (var i = 0; i < container.children.length; i++) {
@@ -130,7 +144,10 @@ function clearElements(container, elementName) {
 }
 
 function line() {
-	return document.createElement('hr');
+	var line = document.createElement('hr');
+	line.setAttribute('id','line');
+
+	return line;
 }
 
 function createBoldLabel(text, textColor, fontSize) {
@@ -387,10 +404,12 @@ function applicationsNextClick() {
 
 //* Features methods*//
 function featuresSearchChange() {
-	if (this.allFeatures.comparison) { 
-		drawTwoAppsFeatures(this.allFeatures, document.getElementById('srch-term').value);
-	} else {
-		drawOneAppFeatures(this.allFeatures, document.getElementById('srch-term').value);
+	if (this.allFeatures !== undefined) {
+		if (this.allFeatures.comparison) { 
+			drawTwoAppsFeatures(this.allFeatures, document.getElementById('srch-term').value);
+		} else {
+			drawOneAppFeatures(this.allFeatures, document.getElementById('srch-term').value);
+		}
 	}
 }
 
@@ -469,6 +488,9 @@ function drawOneAppFeatures(features, filter, container = document.getElementByI
 	document.getElementById('feature_slider').disabled = false;
 
 	clearElements(container, 'checkbox-div');
+	clearElements(container, 'checkbox-all-div');
+	clearLines(container);
+
 	buttonReset();
 
 	$("#next-button").unbind( "click");
