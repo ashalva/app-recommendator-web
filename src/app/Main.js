@@ -705,6 +705,7 @@ function extractSentiments(responseText) {
 	if (sentiments.comparison) {
 		if (sentiments.commonFeaturesSentiments !== undefined) {
 			drawSentiments(sentiments.commonFeaturesSentiments);
+			console.log(sentiments.commonFeaturesSentiments);
 		} 
 
 		if (sentiments.firstAppUncommonSentiments !== undefined) {
@@ -1077,7 +1078,15 @@ function chart(type, labels, chartName, data, backgroundColors, displayXLabels =
 	             xAxes: [{
 	                display: displayXLabels
 	            }]
-        	}
+        	}, 
+        	tooltips: {
+			    mode: 'single',
+			    callbacks: {
+			        title: function(tooltipItem, data) {
+			            return splitStringIntoCharacters(60, tooltipItem[0].xLabel);
+			        }
+			    }
+			}
   		}
 	});
 
@@ -1085,6 +1094,24 @@ function chart(type, labels, chartName, data, backgroundColors, displayXLabels =
 	chart.canvas.parentNode.style.width = width;
 
 	return chartDiv;
+}
+
+function splitStringIntoCharacters(characterCount, text) {
+	var arr = text.split(" ");
+	var words = [];
+	var joinedString = "";
+	for (var i = 0; i < arr.length; i++) {
+		if (joinedString.length + arr[i].length + 1 <= characterCount) {
+	    	joinedString += " " + arr[i];
+			if (i == arr.length - 1) {
+	        	words.push(joinedString.trim());
+			}
+		} else {
+			words.push(joinedString);
+			joinedString = arr[i];
+	    }
+	}
+	return words;
 }
 
 function groupedChart(data, displayXLabels = true, width = '900px') {
